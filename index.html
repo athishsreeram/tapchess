@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Chess Controller - Main Display</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .board-container {
+            text-align: center;
+        }
+
+        .chess-board {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .board-row {
+            display: flex;
+        }
+
+        .square {
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        @media (max-width: 768px) {
+            .square {
+                width: 50px;
+                height: 50px;
+                font-size: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .square {
+                width: 40px;
+                height: 40px;
+                font-size: 24px;
+            }
+        }
+
+        .square.light {
+            background-color: #f0d9b5;
+        }
+
+        .square.dark {
+            background-color: #b58863;
+        }
+
+        .square.selected {
+            background-color: #7b9c5e !important;
+            box-shadow: inset 0 0 0 3px gold;
+        }
+
+        .square.valid-move::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: rgba(0, 255, 0, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .square.check {
+            background-color: #ff6b6b !important;
+            animation: pulse 0.5s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .sidebar {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+        }
+
+        .status {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .turn-indicator {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .turn-white { color: #2c3e50; }
+        .turn-black { color: #34495e; }
+
+        .mode-selector {
+            margin: 15px 0;
+        }
+
+        .mode-btn, .difficulty-btn {
+            padding: 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        .mode-btn.active, .difficulty-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .connection-status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .connected { background: #d4edda; color: #155724; }
+        .disconnected { background: #f8d7da; color: #721c24; }
+
+        .room-code {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            letter-spacing: 5px;
+        }
+
+        .qr-code {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .qr-code canvas {
+            max-width: 150px;
+            height: auto;
+        }
+
+        .move-history {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+
+        .move-history h4 {
+            margin-bottom: 10px;
+        }
+
+        .move-list {
+            display: grid;
+            grid-template-columns: auto auto;
+            gap: 5px;
+        }
+
+        .move-item {
+            padding: 5px;
+            background: white;
+            border-radius: 3px;
+        }
+
+        button {
+            padding: 10px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #667eea;
+            color: white;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #5a67d8;
+        }
+
+        .reset-btn {
+            background: #e74c3c;
+        }
+
+        .reset-btn:hover {
+            background: #c0392b;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 20px;
+        }
+
+        .modal-content button {
+            margin-top: 20px;
+            padding: 10px 30px;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>♞ Chess Controller - Main Display ♞</h1>
+        
+        <div class="main-content">
+            <div class="board-container">
+                <div class="chess-board" id="chess-board"></div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="status">
+                    <div class="connection-status" id="connection-status">Disconnected</div>
+                    <div class="turn-indicator" id="turn-indicator">
+                        <span id="turn-text">White's Turn</span>
+                    </div>
+                </div>
+                
+                <div class="mode-selector">
+                    <h4>Game Mode:</h4>
+                    <button class="mode-btn active" data-mode="ai">🤖 vs Computer</button>
+                    <button class="mode-btn" data-mode="two-player">👥 2 Player</button>
+                </div>
+                
+                <div id="difficulty-selector" class="difficulty-selector">
+                    <h4>Computer Difficulty:</h4>
+                    <button class="difficulty-btn" data-diff="easy">🐣 Easy</button>
+                    <button class="difficulty-btn active" data-diff="medium">🐥 Medium</button>
+                    <button class="difficulty-btn" data-diff="hard">🐔 Hard</button>
+                </div>
+                
+                <div class="room-section">
+                    <h4>Room Code:</h4>
+                    <div class="room-code" id="room-code">Loading...</div>
+                    <div class="qr-code" id="qr-code"></div>
+                    <button id="refresh-qr">🔄 Refresh QR</button>
+                </div>
+                
+                <div class="controls">
+                    <button id="reset-game" class="reset-btn">🔄 Reset Game</button>
+                </div>
+                
+                <div class="move-history">
+                    <h4>Move History:</h4>
+                    <div class="move-list" id="move-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="game-over-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-message">Game Over!</h2>
+            <button onclick="closeModal()">Play Again</button>
+        </div>
+    </div>
+    
+    <script src="chess-engine.js"></script>
+    <script src="ai-opponent.js"></script>
+    <script src="webrtc-connection.js"></script>
+    
+    <script>
+        let engine = new ChessEngine();
+        let ai = new ChessAI('medium');
+        let gameMode = 'ai';
+        let webrtc = null;
+        let roomCode = null;
+        let selectedSquare = null;
+        let controllers = { white: null, black: null };
+        
+        // Piece Unicode mapping
+        const pieceMap = {
+            'wr': '♜', 'wn': '♞', 'wb': '♝', 'wq': '♛', 'wk': '♚', 'wp': '♟',
+            'br': '♖', 'bn': '♘', 'bb': '♗', 'bq': '♕', 'bk': '♔', 'bp': '♙'
+        };
+        
+        // Initialize
+        function init() {
+            generateRoomCode();
+            setupEventListeners();
+            renderBoard();
+            
+            // Check for signaling messages periodically
+            setInterval(() => {
+                if (webrtc) {
+                    webrtc.checkSignaling();
+                }
+            }, 500);
+        }
+        
+        // Generate random room code
+        function generateRoomCode() {
+            roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
+            document.getElementById('room-code').textContent = roomCode;
+            
+            // Generate QR code
+            const controllerUrl = `${window.location.origin}${window.location.pathname.replace('index.html', 'controller.html')}?room=${roomCode}`;
+            new QRCode(document.getElementById('qr-code'), {
+                text: controllerUrl,
+                width: 150,
+                height: 150
+            });
+            
+            // Initialize WebRTC as host
+            initWebRTC();
+        }
+        
+        // Initialize WebRTC connection
+        async function initWebRTC() {
+            webrtc = new WebRTCConnection(roomCode, true);
+            webrtc.onMessage = handleMessage;
+            await webrtc.initialize();
+            
+            // Check for existing signaling
+            webrtc.checkSignaling();
+            
+            // Update connection status
+            setInterval(() => {
+                const statusEl = document.getElementById('connection-status');
+                if (webrtc.connectionStatus === 'connected') {
+                    statusEl.textContent = '✅ Connected';
+                    statusEl.className = 'connection-status connected';
+                } else {
+                    statusEl.textContent = '🔌 Waiting for controller...';
+                    statusEl.className = 'connection-status disconnected';
+                }
+            }, 1000);
+        }
+        
+        // Handle incoming messages
+        function handleMessage(message) {
+            console.log('Received:', message);
+            
+            switch(message.type) {
+                case 'MOVE':
+                    handleMoveFromController(message.data);
+                    break;
+                case 'REGISTER':
+                    handleControllerRegistration(message.data);
+                    break;
+            }
+        }
+        
+        // Handle controller registration for 2-player mode
+        function handleControllerRegistration(data) {
+            if (gameMode === 'two-player') {
+                const color = !controllers.white ? 'white' : (!controllers.black ? 'black' : null);
+                if (color) {
+                    controllers[color] = data.controllerId;
+                    webrtc.sendMessage('REGISTERED', { color });
+                    
+                    // Start game if both controllers connected
+                    if (controllers.white && controllers.black) {
+                        startTwoPlayerGame();
+                    }
+                }
+            }
+        }
+        
+        // Start two-player game
+        function startTwoPlayerGame() {
+            const fen = engine.getFEN();
+            webrtc.sendMessage('SYNC', { fen, currentTurn: engine.currentTurn });
+        }
+        
+        // Handle move from controller
+        function handleMoveFromController(data) {
+            if (gameMode === 'two-player') {
+                // Verify it's the correct controller's turn
+                const expectedColor = engine.currentTurn;
+                if ((expectedColor === 'white' && data.controllerId === controllers.white) ||
+                    (expectedColor === 'black' && data.controllerId === controllers.black)) {
+                    executeMove(data.from, data.to);
+                }
+            } else if (gameMode === 'ai') {
+                // Only accept moves when it's player's turn (white)
+                if (engine.currentTurn === 'white') {
+                    executeMove(data.from, data.to);
+                }
+            }
+        }
+        
+        // Execute move
+        function executeMove(from, to) {
+            const success = engine.makeMove(from.row, from.col, to.row, to.col);
+            
+            if (success) {
+                renderBoard();
+                updateMoveHistory();
+                updateTurnDisplay();
+                
+                // Sync with controller
+                if (webrtc && webrtc.connectionStatus === 'connected') {
+                    webrtc.sendMessage('SYNC', { fen: engine.getFEN(), currentTurn: engine.currentTurn });
+                }
+                
+                // Check game over
+                if (engine.gameOver) {
+                    showGameOver();
+                    return;
+                }
+                
+                // AI move if in AI mode and game not over
+                if (gameMode === 'ai' && engine.currentTurn === 'black' && !engine.gameOver) {
+                    setTimeout(() => {
+                        const aiMove = ai.getMove(engine);
+                        if (aiMove) {
+                            engine.makeMove(aiMove.from.row, aiMove.from.col, aiMove.to.row, aiMove.to.col);
+                            renderBoard();
+                            updateMoveHistory();
+                            updateTurnDisplay();
+                            
+                            // Sync with controller
+                            if (webrtc && webrtc.connectionStatus === 'connected') {
+                                webrtc.sendMessage('SYNC', { fen: engine.getFEN(), currentTurn: engine.currentTurn });
+                            }
+                            
+                            if (engine.gameOver) {
+                                showGameOver();
+                            }
+                        }
+                    }, 500);
+                }
+            }
+        }
+        
+        // Render chess board
+        function renderBoard() {
+            const boardEl = document.getElementById('chess-board');
+            boardEl.innerHTML = '';
+            
+            const kingPos = engine.findKing(engine.currentTurn);
+            const isInCheck = kingPos && engine.isInCheck(engine.currentTurn);
+            
+            for (let i = 0; i < 8; i++) {
+                const row = document.createElement('div');
+                row.className = 'board-row';
+                
+                for (let j = 0; j < 8; j++) {
+                    const piece = engine.getPiece(i, j);
+                    const square = document.createElement('div');
+                    square.className = `square ${(i + j) % 2 === 0 ? 'light' : 'dark'}`;
+                    
+                    if (selectedSquare && selectedSquare.row === i && selectedSquare.col === j) {
+                        square.classList.add('selected');
+                    }
+                    
+                    if (isInCheck && kingPos && kingPos.row === i && kingPos.col === j) {
+                        square.classList.add('check');
+                    }
+                    
+                    if (piece) {
+                        square.textContent = pieceMap[piece] || '?';
+                        square.style.fontSize = '48px';
+                    }
+                    
+                    // Add click handler for testing (optional)
+                    square.onclick = () => handleSquareClick(i, j);
+                    
+                    row.appendChild(square);
+                }
+                boardEl.appendChild(row);
+            }
+        }
+        
+        // Handle square click (for testing on main display)
+        function handleSquareClick(row, col) {
+            if (!selectedSquare) {
+                const piece = engine.getPiece(row, col);
+                if (piece && piece[0] === (engine.currentTurn === 'white' ? 'w' : 'b')) {
+                    selectedSquare = { row, col };
+                    renderBoard();
+                    
+                    // Highlight valid moves
+                    const validMoves = engine.getLegalMovesForPiece(row, col);
+                    validMoves.forEach(move => {
+                        const square = document.querySelector(`.board-row:nth-child(${move.row + 1}) .square:nth-child(${move.col + 1})`);
+                        if (square) square.classList.add('valid-move');
+                    });
+                }
+            } else {
+                if (engine.isValidMove(selectedSquare.row, selectedSquare.col, row, col)) {
+                    executeMove(selectedSquare, { row, col });
+                }
+                selectedSquare = null;
+                renderBoard();
+            }
+        }
+        
+        // Update turn display
+        function updateTurnDisplay() {
+            const turnText = document.getElementById('turn-text');
+            turnText.textContent = `${engine.currentTurn === 'white' ? '⚪ White' : '⚫ Black'}'s Turn`;
+            
+            if (engine.gameOver) {
+                let winnerText = '';
+                if (engine.winner === 'white') winnerText = '⚪ White Wins!';
+                else if (engine.winner === 'black') winnerText = '⚫ Black Wins!';
+                else winnerText = 'Draw!';
+                turnText.textContent = winnerText;
+            }
+        }
+        
+        // Update move history
+        function updateMoveHistory() {
+            const moveList = document.getElementById('move-list');
+            moveList.innerHTML = '';
+            
+            engine.moveHistory.forEach((move, index) => {
+                const moveNum = Math.floor(index / 2) + 1;
+                const moveItem = document.createElement('div');
+                moveItem.className = 'move-item';
+                
+                if (index % 2 === 0) {
+                    moveItem.innerHTML = `<strong>${moveNum}.</strong> ${move.notation}`;
+                } else {
+                    moveItem.innerHTML = `${move.notation}`;
+                }
+                
+                moveList.appendChild(moveItem);
+            });
+        }
+        
+        // Show game over modal
+        function showGameOver() {
+            const modal = document.getElementById('game-over-modal');
+            const message = document.getElementById('modal-message');
+            
+            if (engine.winner === 'white') message.textContent = '🏆 White Wins! 🏆';
+            else if (engine.winner === 'black') message.textContent = '🏆 Black Wins! 🏆';
+            else message.textContent = '🤝 Draw! 🤝';
+            
+            modal.style.display = 'flex';
+        }
+        
+        // Reset game
+        function resetGame() {
+            engine.resetGame();
+            selectedSquare = null;
+            renderBoard();
+            updateMoveHistory();
+            updateTurnDisplay();
+            
+            // Sync with controller
+            if (webrtc && webrtc.connectionStatus === 'connected') {
+                webrtc.sendMessage('SYNC', { fen: engine.getFEN(), currentTurn: engine.currentTurn });
+            }
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('reset-game').onclick = resetGame;
+            document.getElementById('refresh-qr').onclick = () => generateRoomCode();
+            
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.onclick = () => {
+                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    gameMode = btn.dataset.mode;
+                    
+                    // Show/hide difficulty selector
+                    const diffSelector = document.getElementById('difficulty-selector');
+                    diffSelector.style.display = gameMode === 'ai' ? 'block' : 'none';
+                    
+                    // Reset game when changing mode
+                    resetGame();
+                };
+            });
+            
+            document.querySelectorAll('.difficulty-btn').forEach(btn => {
+                btn.onclick = () => {
+                    document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    ai.difficulty = btn.dataset.diff;
+                };
+            });
+        }
+        
+        // Close modal
+        window.closeModal = function() {
+            document.getElementById('game-over-modal').style.display = 'none';
+            resetGame();
+        };
+        
+        // Start the app
+        init();
+    </script>
+</body>
+</html>
