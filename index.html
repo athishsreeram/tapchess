@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #FF6B9D 0%, #FEC860 100%);
             min-height: 100vh;
             padding: 20px;
         }
@@ -70,37 +70,38 @@
             justify-content: center;
             font-size: 48px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s;
             position: relative;
         }
 
         @media (max-width: 768px) {
             .square {
-                width: 50px;
-                height: 50px;
-                font-size: 32px;
+                width: 55px;
+                height: 55px;
+                font-size: 38px;
             }
         }
 
         @media (max-width: 480px) {
             .square {
-                width: 40px;
-                height: 40px;
-                font-size: 24px;
+                width: 45px;
+                height: 45px;
+                font-size: 32px;
             }
         }
 
         .square.light {
-            background-color: #f0d9b5;
+            background-color: #FFFACD;
         }
 
         .square.dark {
-            background-color: #b58863;
+            background-color: #FFB6C1;
         }
 
         .square.selected {
-            background-color: #7b9c5e !important;
-            box-shadow: inset 0 0 0 3px gold;
+            background-color: #32CD32 !important;
+            box-shadow: 0 0 20px #FFD700, inset 0 0 0 3px gold;
+            transform: scale(1.08);
         }
 
         .square.valid-move::after {
@@ -108,14 +109,16 @@
             position: absolute;
             width: 20px;
             height: 20px;
-            background: rgba(0, 255, 0, 0.5);
+            background: rgba(255, 215, 0, 0.8);
             border-radius: 50%;
             pointer-events: none;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.9);
         }
 
         .square.check {
-            background-color: #ff6b6b !important;
-            animation: pulse 0.5s ease-in-out;
+            background-color: #FF1493 !important;
+            animation: shake 0.4s ease-in-out infinite;
+            box-shadow: 0 0 20px #FF1493;
         }
 
         @keyframes pulse {
@@ -340,6 +343,7 @@
     <script src="chess-engine.js"></script>
     <script src="ai-opponent.js"></script>
     <script src="webrtc-connection.js"></script>
+    <script src="gamification.js"></script>
     
     <script>
         let engine = new ChessEngine();
@@ -350,10 +354,10 @@
         let selectedSquare = null;
         let controllers = { white: null, black: null };
         
-        // Piece Unicode mapping
+        // Piece Unicode mapping - Toddler friendly!
         const pieceMap = {
-            'wr': '♜', 'wn': '♞', 'wb': '♝', 'wq': '♛', 'wk': '♚', 'wp': '♟',
-            'br': '♖', 'bn': '♘', 'bb': '♗', 'bq': '♕', 'bk': '♔', 'bp': '♙'
+            'wr': '🏰', 'wn': '🐴', 'wb': '👼', 'wq': '👑', 'wk': '🤴', 'wp': '⚪',
+            'br': '💀', 'bn': '🦓', 'bb': '👿', 'bq': '🎭', 'bk': '👹', 'bp': '⚫'
         };
         
         // Initialize
@@ -464,9 +468,24 @@
         
         // Execute move
         function executeMove(from, to) {
+            const capturedPiece = engine.getPiece(to.row, to.col);
             const success = engine.makeMove(from.row, from.col, to.row, to.col);
             
             if (success) {
+                // Play sounds and animations
+                if (capturedPiece) {
+                    gameSounds.playCapture();
+                    gameStats.recordCapture(capturedPiece);
+                } else {
+                    gameSounds.playMove();
+                }
+                
+                // Check if in check
+                const nextPlayerInCheck = engine.isInCheck(engine.currentTurn);
+                if (nextPlayerInCheck) {
+                    gameSounds.playCheck();
+                }
+                
                 renderBoard();
                 updateMoveHistory();
                 updateTurnDisplay();
@@ -478,6 +497,14 @@
                 
                 // Check game over
                 if (engine.gameOver) {
+                    if (engine.winner && engine.winner !== 'draw') {
+                        gameSounds.playVictory();
+                        gameStats.recordCheckmate(engine.winner);
+                        GameAnimations.showCheckmate(engine.winner === 'white' ? '🎉 WHITE WINS! 🎉' : '🎉 BLACK WINS! 🎉');
+                    } else if (engine.winner === 'draw') {
+                        gameSounds.playCheckmate();
+                        GameAnimations.showCheckmate("🤝 DRAW! 🤝");
+                    }
                     showGameOver();
                     return;
                 }
@@ -487,7 +514,16 @@
                     setTimeout(() => {
                         const aiMove = ai.getMove(engine);
                         if (aiMove) {
+                            const aiCapturedPiece = engine.getPiece(aiMove.to.row, aiMove.to.col);
                             engine.makeMove(aiMove.from.row, aiMove.from.col, aiMove.to.row, aiMove.to.col);
+                            
+                            // Play sounds
+                            if (aiCapturedPiece) {
+                                gameSounds.playCapture();
+                            } else {
+                                gameSounds.playMove();
+                            }
+                            
                             renderBoard();
                             updateMoveHistory();
                             updateTurnDisplay();
@@ -498,6 +534,12 @@
                             }
                             
                             if (engine.gameOver) {
+                                if (engine.winner && engine.winner !== 'draw') {
+                                    gameSounds.playCheckmate();
+                                    GameAnimations.showCheckmate(engine.winner === 'white' ? '🎉 YOU WIN! 🎉' : '💻 AI WINS! 💻');
+                                } else {
+                                    GameAnimations.showCheckmate("🤝 DRAW! 🤝");
+                                }
                                 showGameOver();
                             }
                         }

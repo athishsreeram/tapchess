@@ -125,15 +125,15 @@ class ChessEngine {
     // Normal move
     if (rowDiff <= 1 && colDiff <= 1) return true;
     
-    // Castling
-    if (rowDiff === 0 && colDiff === 2 && !this.isInCheck(this.currentTurn)) {
+    // Castling - 2 squares horizontally
+    if (rowDiff === 0 && colDiff === 2) {
       const row = fromRow;
-      const col = toCol > fromCol ? 7 : 0;
-      const rookCol = toCol > fromCol ? 7 : 0;
-      const rookPiece = this.getPiece(row, rookCol);
+      const rookKingCol = toCol > fromCol ? 7 : 0;
+      const rookPiece = this.getPiece(row, rookKingCol);
       
+      // Check rook exists and path is clear
       if (rookPiece && rookPiece[1] === 'r' && rookPiece[0] === this.currentTurn[0]) {
-        return this.isClearPath(row, fromCol, row, rookCol);
+        return this.isClearPath(row, Math.min(fromCol, toCol), row, Math.max(fromCol, toCol));
       }
     }
     
@@ -177,18 +177,41 @@ class ChessEngine {
     
     const opponentColor = color === 'white' ? 'black' : 'white';
     
-    // Check if any opponent piece can capture the king
+    // Check if any opponent piece can capture the king (without recursion)
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
         const piece = this.getPiece(i, j);
         if (piece && piece[0] === (opponentColor === 'white' ? 'w' : 'b')) {
-          if (this.isValidMove(i, j, kingPos.row, kingPos.col)) {
+          if (this.canPieceCaptureKing(i, j, kingPos)) {
             return true;
           }
         }
       }
     }
     return false;
+  }
+
+  canPieceCaptureKing(fromRow, fromCol, kingPos) {
+    const piece = this.getPiece(fromRow, fromCol);
+    if (!piece) return false;
+    
+    const pieceType = piece[1];
+    const color = piece[0] === 'w' ? 'white' : 'black';
+    
+    let canCapture = false;
+    switch(pieceType) {
+      case 'p': canCapture = this.isValidPawnMove(fromRow, fromCol, kingPos.row, kingPos.col, color); break;
+      case 'n': canCapture = this.isValidKnightMove(fromRow, fromCol, kingPos.row, kingPos.col); break;
+      case 'b': canCapture = this.isValidBishopMove(fromRow, fromCol, kingPos.row, kingPos.col); break;
+      case 'r': canCapture = this.isValidRookMove(fromRow, fromCol, kingPos.row, kingPos.col); break;
+      case 'q': canCapture = this.isValidQueenMove(fromRow, fromCol, kingPos.row, kingPos.col); break;
+      case 'k': 
+        const rowDiff = Math.abs(kingPos.row - fromRow);
+        const colDiff = Math.abs(kingPos.col - fromCol);
+        canCapture = rowDiff <= 1 && colDiff <= 1 && !(rowDiff === 0 && colDiff === 0);
+        break;
+    }
+    return canCapture;
   }
 
   findKing(color) {
@@ -224,9 +247,10 @@ class ChessEngine {
     this.board[toRow][toCol] = piece;
     this.board[fromRow][fromCol] = null;
     
-    // Handle pawn promotion
+    // Handle pawn promotion - store promotion info for UI to handle choice
     if (pieceType === 'p' && (toRow === 0 || toRow === 7)) {
-      this.board[toRow][toCol] = `${piece[0]}q`; // Auto-promote to queen
+      this.board[toRow][toCol] = `${piece[0]}q`; // Default to queen
+      this.lastPromotionPiece = { row: toRow, col: toCol, color: piece[0] };
     }
     
     // Update en passant target
@@ -279,6 +303,12 @@ class ChessEngine {
       } else {
         this.winner = 'draw';
       }
+    }
+    
+    // Check for 50-move rule (100 half-moves)
+    if (this.halfMoveClock >= 100) {
+      this.gameOver = true;
+      this.winner = 'draw';
     }
     
     // Check for insufficient material

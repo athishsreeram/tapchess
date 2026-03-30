@@ -76,7 +76,7 @@ class ChessAI {
       engine.board[move.to.row][move.to.col] = movingPiece;
       engine.board[move.from.row][move.from.col] = null;
       
-      const score = this.evaluatePosition(engine);
+      const score = this.evaluatePosition(engine, movingPiece, move.from, move.to);
       
       // Undo move
       engine.board[move.from.row][move.from.col] = movingPiece;
@@ -91,27 +91,62 @@ class ChessAI {
     return bestMove;
   }
 
-  evaluatePosition(engine) {
+  evaluatePosition(engine, movingPiece, fromPos, toPos) {
     let score = 0;
     
+    // Material advantage
     for (let i = 0; i < 8; i++) {
       for (let j = 0; j < 8; j++) {
         const piece = engine.getPiece(i, j);
         if (piece) {
           const value = this.getPieceValue(piece);
-          if (piece[0] === 'w') {
-            score += value;
+          const positionBonus = this.getPositionBonus(piece, i, j);
+          if (piece[0] === 'b') {
+            score -= (value + positionBonus);
           } else {
-            score -= value;
+            score += (value + positionBonus);
           }
         }
       }
     }
     
+    // Reward capturing better pieces
+    if (toPos && engine.getPiece(toPos.row, toPos.col)) {
+      const capturedPiece = engine.board[toPos.row][toPos.col];
+      const captureValue = this.getPieceValue(capturedPiece);
+      score += captureValue * 10; // High weight for captures
+    }
+    
+    // Penalize moving into danger (simplified)
+    if (engine.isInCheck('black')) {
+      score -= 50;
+    }
+    
     // Add small random factor for variety
-    score += (Math.random() - 0.5) * 0.1;
+    score += (Math.random() - 0.5) * 5;
     
     return score;
+  }
+
+  getPositionBonus(piece, row, col) {
+    // Center control bonus
+    const centerDistance = Math.abs(row - 3.5) + Math.abs(col - 3.5);
+    let bonus = (8 - centerDistance) * 0.5;
+    
+    // Piece-specific bonuses
+    switch(piece[1]) {
+      case 'p':
+        // Reward advanced pawns
+        if (piece[0] === 'b') bonus += (row) * 0.5;
+        else bonus += (7 - row) * 0.5;
+        break;
+      case 'k':
+        // King safety
+        bonus -= 2;
+        break;
+    }
+    
+    return bonus;
   }
 
   getPieceValue(piece) {

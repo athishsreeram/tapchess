@@ -15,7 +15,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            background: linear-gradient(135deg, #FF6B9D 0%, #FEC860 100%);
             min-height: 100vh;
             padding: 10px;
         }
@@ -113,12 +113,20 @@
             justify-content: center;
             font-size: 40px;
             cursor: pointer;
-            transition: all 0.1s;
+            transition: all 0.2s;
             position: relative;
             touch-action: manipulation;
         }
 
         @media (max-width: 600px) {
+            .square {
+                width: 50px;
+                height: 50px;
+                font-size: 34px;
+            }
+        }
+
+        @media (max-width: 480px) {
             .square {
                 width: 45px;
                 height: 45px;
@@ -126,7 +134,7 @@
             }
         }
 
-        @media (max-width: 480px) {
+        @media (max-width: 380px) {
             .square {
                 width: 40px;
                 height: 40px;
@@ -134,25 +142,17 @@
             }
         }
 
-        @media (max-width: 380px) {
-            .square {
-                width: 35px;
-                height: 35px;
-                font-size: 22px;
-            }
-        }
-
         .square.light {
-            background-color: #f0d9b5;
+            background-color: #FFFACD;
         }
 
         .square.dark {
-            background-color: #b58863;
+            background-color: #FFB6C1;
         }
 
         .square.selected {
-            background-color: #7b9c5e !important;
-            box-shadow: inset 0 0 0 3px gold;
+            background-color: #32CD32 !important;
+            box-shadow: 0 0 20px #FFD700, inset 0 0 0 3px gold;
             transform: scale(0.98);
         }
 
@@ -161,14 +161,16 @@
             position: absolute;
             width: 15px;
             height: 15px;
-            background: rgba(0, 255, 0, 0.6);
+            background: rgba(255, 215, 0, 0.8);
             border-radius: 50%;
             pointer-events: none;
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.9);
         }
 
         .square.check {
-            background-color: #ff6b6b !important;
-            animation: shake 0.3s ease-in-out;
+            background-color: #FF1493 !important;
+            animation: shake 0.4s ease-in-out infinite;
+            box-shadow: 0 0 20px #FF1493;
         }
 
         @keyframes shake {
@@ -300,6 +302,7 @@
     
     <script src="chess-engine.js"></script>
     <script src="webrtc-connection.js"></script>
+    <script src="gamification.js"></script>
     
     <script>
         let engine = new ChessEngine();
@@ -310,10 +313,10 @@
         let controllerId = Math.random().toString(36).substring(2, 10);
         let isMyTurn = false;
         
-        // Piece Unicode mapping
+        // Piece Unicode mapping - Toddler friendly!
         const pieceMap = {
-            'wr': '♜', 'wn': '♞', 'wb': '♝', 'wq': '♛', 'wk': '♚', 'wp': '♟',
-            'br': '♖', 'bn': '♘', 'bb': '♗', 'bq': '♕', 'bk': '♔', 'bp': '♙'
+            'wr': '🏰', 'wn': '🐴', 'wb': '👼', 'wq': '👑', 'wk': '🤴', 'wp': '⚪',
+            'br': '💀', 'bn': '🦓', 'bb': '👿', 'bq': '🎭', 'bk': '👹', 'bp': '⚫'
         };
         
         // Initialize
