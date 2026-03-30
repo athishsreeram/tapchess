@@ -1,166 +1,123 @@
-# Chess Controller 🎮♞
+# ♟ Tap Chess - Phone Controller Architecture
 
-A real-time chess game with phone-as-controller support. Play against computer AI or with two players using your phone as the chess board controller!
+A complete chess game using a **phone-as-controller** architecture, where your TV/laptop acts as the display and your phone acts as the input device — connected via WebRTC peer-to-peer.
 
-## ✨ Features
+## Architecture
 
-- **Phone as Controller** - Use your smartphone as a touch-based chess board
-- **Two Game Modes**:
-  - 🤖 vs Computer - Play against AI with 3 difficulty levels
-  - 👥 2 Player - Two phones control opposite sides
-- **Real-time Sync** - Moves instantly reflect on both devices
-- **Room Code System** - Easy connection with 4-character codes
-- **QR Code Pairing** - Scan to connect instantly
-- **Full Chess Rules** - En passant, castling, pawn promotion, check/checkmate
-- **Move History** - Track all moves in algebraic notation
-- **Responsive Design** - Works on all devices
-- **Gamification** - Sound effects, animations, & celebration moments
-- **Standard Chess Pieces** - Clear Unicode chess notation
+**Step 1: Display creates room**
+- Display (TV/Laptop) opens index.html
+- Generates 4-character room code (e.g., "AB12")
+- Shows QR code and room code on screen
 
-## 🌐 How to Use
+**Step 2: Phone connects**
+- Phone opens controller.html
+- Scans QR code or enters room code
+- WebRTC connection established via PeerJS
+
+**Step 3: Game flow**
+- Phone sends move commands → Display
+- Display validates moves and updates board
+- Display sends game state → Phone
+- Display updates move history and shows results
+
+**Step 4: Game modes**
+- **vs Computer**: Display controls AI opponent
+- **Two Players**: Two phones connect (White and Black)
+
+## Files
+
+| File | Purpose | Device |
+|---|---|---|
+| `index.html` | Display / Game Host | TV, Laptop, Desktop |
+| `controller.html` | Touch Input Controller | Phone, Tablet |
+
+## How to Play
 
 ### Setup
-1. **On Computer/TV:** Open the main display URL (index.html)
-2. **On Phone:** Scan the displayed QR code or enter the room code shown on the main display
-3. **Wait for connection** - Status will show "Connected" when ready
+
+1. **Serve both files** from any web server:
+   ```bash
+   # Python
+   python3 -m http.server 8080
+
+   # Node.js
+   npx serve .
+
+   # Or deploy to any static host (Netlify, Vercel, GitHub Pages, etc.)
+   ```
+
+2. **Open `index.html`** on your TV or laptop (the display device).
+
+3. **Select a game mode**:
+   - 🤖 **Play vs Computer** — one phone controller needed
+   - 👥 **Two Players** — two phone controllers needed
+
+4. **Connect your phone**:
+   - A QR code and 4-character room code appear on the display
+   - On your phone, open `controller.html`
+   - Enter the room code (or scan the QR code)
+   - The connection is established via WebRTC (peer-to-peer)
+
+5. **Play chess!**
+   - Tap a piece on your phone to select it
+   - Green dots show valid moves
+   - Tap a destination to move
+   - The display updates in real-time
 
 ### Game Modes
 
-#### 🤖 vs Computer
-- You play as White (pieces appear on bottom)
-- Computer plays as Black (pieces appear on top)
-- Choose difficulty before starting:
-  - **Easy** (🐣): Random moves
-  - **Medium** (🐥): Prioritizes captures
-  - **Hard** (🐔): Strategic evaluation
+**vs Computer (AI)**
+- One phone connects as White
+- AI plays as Black with three difficulty levels:
+  - **Easy**: Random legal moves
+  - **Medium**: Prefers captures and checks
+  - **Hard**: Positional evaluation with tactical awareness
 
-#### 👥 Two Player
-- First phone connected gets White
-- Second phone connected gets Black
-- Players alternate turns
-- Real-time board sync across both devices
+**Two Players**
+- First phone connects as White
+- Second phone connects as Black
+- Each player sees the board from their perspective
 
-### Controls
+## Features
 
-**On Main Display:**
-- Click squares to make moves (test mode)
-- Select game mode (AI or Two Player)
-- Adjust difficulty level
-- View move history
-- Reset game at any time
+- **Full chess rules**: Castling, en passant, pawn promotion, check/checkmate/stalemate detection
+- **Move history**: Algebraic notation displayed on the TV display panel
+- **Sound effects**: Web Audio API beeps for moves, captures, checks, and wins
+- **Haptic feedback**: Phone vibration on moves and events
+- **Visual indicators**: Last move highlight, check warnings, valid move dots
+- **Confetti celebration**: Canvas confetti on checkmate
+- **Reconnection support**: Game state preserved on display if controller disconnects
+- **Responsive design**: Works on any screen size
 
-**On Phone Controller:**
-1. Tap a piece to select it (valid moves appear as glowing dots)
-2. Tap a destination square to move
-3. Selected piece is highlighted in bright green
-4. King in check flashes bright magenta
-5. View your color assignment and whose turn it is
+## Technical Details
 
-## 🛠️ Technical Details
+### Dependencies (loaded via CDN)
 
-### Technologies Used
-- **Frontend**: HTML5, CSS3, JavaScript (Vanilla)
-- **Communication**: WebRTC for real-time P2P connection
-- **Game Logic**: Custom chess engine with full rule implementation
-- **Signaling**: localStorage-based signaling (no server required)
-- **Audio**: Web Audio API for sound effects
+- [chess.js v0.10.3](https://github.com/jhlywa/chess.js) — Chess engine and move validation
+- [PeerJS v1.4.7](https://peerjs.com/) — WebRTC peer-to-peer connections
+- [qrcode.js v1.0.0](https://github.com/davidshimjs/qrcodejs) — QR code generation
+- [canvas-confetti v1](https://github.com/catdad/canvas-confetti) — Win celebration effects
 
-### File Structure
-```
-tapchess/
-├── index.html              # Main display (game board)
-├── controller.html         # Phone controller
-├── chess-engine.js        # Complete chess rule engine
-├── ai-opponent.js         # Chess AI with multiple difficulty levels
-├── webrtc-connection.js   # WebRTC peer connection handling
-├── gamification.js        # Sound effects & animations
-└── README.md              # This file
-```
+### Data Flow
 
-### Chess Features Implemented
-✅ **Movement Rules**
-- All piece movements (Pawn, Rook, Bishop, Knight, Queen, King)
-- Castling (kingside & queenside)
-- En passant capture
-- Pawn promotion
+- **Controller → Display**: Move commands (`{ from, to, promotion }`)
+- **Display → Controller**: Game state updates (FEN, turn, history, valid moves)
+- **Display**: Source of truth — runs chess engine, validates all moves
+- **Controller**: Input-only — sends intentions, never validates
 
-✅ **Game State**
-- Check detection
-- Checkmate detection  
-- Stalemate recognition (draw)
-- 50-move rule (draw after 100 half-moves)
-- Insufficient material detection
-- Move history in algebraic notation
+### Browser Support
 
-✅ **Two-Player Support**
-- Real-time board synchronization
-- Turn validation
-- Illegal move rejection
-- Opponent move notifications
+- Chrome 80+ ✅
+- Safari 14+ ✅
+- Firefox 80+ ✅
+- Edge 80+ ✅
 
-## 🎮 How to Play Chess
+Requires WebRTC DataChannel support. Vibration API is optional (graceful fallback).
 
-### Basic Rules
-- **Pawns**: Move forward 1 square (2 squares from start), capture diagonally
-- **Rook**: Move any number of squares horizontally or vertically
-- **Bishop**: Move any number of squares diagonally
-- **Knight**: Move in L-shape (2+1 or 1+2 squares)
-- **Queen**: Move like rook OR bishop
-- **King**: Move 1 square in any direction (can castle with rook)
+## Development
 
-### Special Moves
-- **Castling**: King + Rook move together (must not be in check, no pieces between)
-- **En Passant**: Pawn captures opponent's pawn that just moved 2 squares
-- **Promotion**: Pawn reaching last rank becomes a Queen (or other piece)
+No build step required. Edit the HTML files directly and refresh. All styles and scripts are inlined for simplicity.
 
-### Winning
-- **Checkmate**: Opponent's king is in check and has no legal moves
-- **Resignation**: Opponent gives up
-- **Draw**: Stalemate, 50-move rule, insufficient material, or agreement
+## License
 
-## 🎵 Gamification Features
-
-- **Move Sounds**: Different beeps for move, capture, check
-- **Visual Effects**: Confetti bursts on victory, piece animations
-- **Celebrations**: Pop-in overlay with messages on checkmate
-- **Points System**: Track captured pieces and victories
-
-## 🐛 Troubleshooting
-
-### Connection Issues
-- Ensure both devices are on the same network
-- Try refreshing the QR code on main display
-- Check browser console for error messages
-- Grant WebRTC permissions when prompted
-
-### Move Issues
-- Make sure it's your turn (indicated on controller)
-- Selected piece must be your color
-- Destination must be a legal move (highlighted as valid)
-- Can't move into check
-
-### Display Issues
-- Pieces may appear differently depending on browser/OS
-- Try zooming in/out if board is hard to see
-- Fullscreen mode recommended on main display
-
-## 📝 Notes
-
-- This is a demo version using localStorage for signaling (single machine with two windows works best)
-- For production use, integrate a real signaling server (WebSocket-based)
-- Web Audio API support required for sound effects
-- Modern browser with WebRTC support required
-
-## 🚀 Future Improvements
-
-- Server-based signaling for cross-network play
-- Persist games to database
-- User accounts and rankings
-- Replay analysis
-- Time controls
-- Puzzle modes
-- Mobile app version
-
----
-
-**Enjoy your game! ♞**
+MIT

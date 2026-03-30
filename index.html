@@ -1,735 +1,587 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Chess Controller - Main Display</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>♟ Chess Arena - Display</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;min-height:100vh;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center}
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #FF6B9D 0%, #FEC860 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+/* Landing Screen */
+#landing{display:flex;flex-direction:column;align-items:center;gap:30px;text-align:center}
+#landing h1{font-size:3.5rem;text-shadow:0 0 30px rgba(233,69,96,.5)}
+#landing .subtitle{font-size:1.2rem;color:#aaa;margin-top:-15px}
+.mode-btn{padding:24px 50px;font-size:1.6rem;border:none;border-radius:16px;cursor:pointer;transition:all .3s;font-weight:700;min-width:340px;color:#fff}
+.mode-btn:hover{transform:translateY(-4px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.mode-btn.ai{background:linear-gradient(135deg,#e94560,#c23152)}
+.mode-btn.pvp{background:linear-gradient(135deg,#0f3460,#1a5276)}
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-            padding: 20px;
-        }
+/* Connection Screen */
+#connection{display:none;flex-direction:column;align-items:center;gap:20px;text-align:center}
+#connection h2{font-size:2rem}
+#qrcode-container{background:#fff;padding:20px;border-radius:16px;display:inline-block}
+.room-code{font-size:3rem;font-family:'Courier New',monospace;font-weight:900;letter-spacing:8px;color:#e94560;text-shadow:0 0 20px rgba(233,69,96,.6)}
+.conn-status{font-size:1.2rem;color:#aaa}
+.conn-count{font-size:1.4rem;color:#4ecca3;font-weight:700}
+.spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,.1);border-top-color:#e94560;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 20px;
-        }
+/* Game Screen */
+#game{display:none;width:100%;height:100vh;padding:20px}
+.game-layout{display:flex;width:100%;height:100%;gap:20px;justify-content:center;align-items:center}
+.board-section{display:flex;flex-direction:column;align-items:center;gap:10px}
+.turn-banner{font-size:1.6rem;font-weight:700;padding:10px 30px;border-radius:10px;text-align:center;min-width:300px;transition:all .3s}
+.turn-banner.white{background:linear-gradient(135deg,#f0f0f0,#ddd);color:#222}
+.turn-banner.black{background:linear-gradient(135deg,#333,#111);color:#fff}
+.turn-banner.check{animation:checkPulse 1s infinite}
+@keyframes checkPulse{0%,100%{box-shadow:0 0 10px red}50%{box-shadow:0 0 30px red,0 0 60px rgba(255,0,0,.3)}}
 
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 300px;
-            gap: 20px;
-        }
+.board-container{position:relative}
+.board{display:grid;grid-template-columns:repeat(8,1fr);border:3px solid #e94560;border-radius:4px;overflow:hidden}
+.square{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:2.8rem;position:relative;transition:background .2s}
+.square.light{background:#e8d5b5}
+.square.dark{background:#0f3460}
+.square.last-from,.square.last-to{background:rgba(255,255,100,.35)!important}
+.square.check-king{animation:kingCheck 1s infinite}
+@keyframes kingCheck{0%,100%{box-shadow:inset 0 0 10px red}50%{box-shadow:inset 0 0 25px red}}
+.rank-label{position:absolute;top:2px;left:4px;font-size:.65rem;color:#888;font-weight:700}
+.file-label{position:absolute;bottom:2px;right:4px;font-size:.65rem;color:#888;font-weight:700}
 
-        @media (max-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-        }
+.piece{cursor:default;user-select:none;text-shadow:1px 1px 2px rgba(0,0,0,.3);transition:transform .15s}
 
-        .board-container {
-            text-align: center;
-        }
+/* Right Panel */
+.right-panel{display:flex;flex-direction:column;gap:15px;width:280px;height:100%;max-height:calc(100vh - 40px)}
+.history-panel{flex:1;background:rgba(0,0,0,.4);border-radius:12px;padding:15px;overflow:hidden;display:flex;flex-direction:column}
+.history-panel h3{font-size:1.1rem;margin-bottom:10px;color:#e94560;text-transform:uppercase;letter-spacing:2px}
+.history-list{flex:1;overflow-y:auto;font-family:'Courier New',monospace;font-size:.95rem}
+.history-list::-webkit-scrollbar{width:6px}
+.history-list::-webkit-scrollbar-thumb{background:#e94560;border-radius:3px}
+.move-row{display:flex;padding:4px 8px;border-radius:4px}
+.move-row:last-child{background:rgba(233,69,96,.2)}
+.move-num{color:#666;width:35px;flex-shrink:0}
+.move-white,.move-black{flex:1;padding:2px 6px;border-radius:3px}
+.move-white:hover,.move-black:hover{background:rgba(255,255,255,.1)}
 
-        .chess-board {
-            display: inline-block;
-            background: #f0f0f0;
-            padding: 10px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
+.controls{display:flex;flex-direction:column;gap:8px}
+.ctrl-btn{padding:12px;font-size:1rem;border:none;border-radius:10px;cursor:pointer;font-weight:600;transition:all .2s;color:#fff}
+.ctrl-btn:hover{transform:translateY(-2px)}
+.ctrl-btn.new-game{background:#4ecca3}
+.ctrl-btn.resign{background:#e94560}
+.ctrl-btn.settings{background:#0f3460}
+.difficulty-selector{display:flex;gap:6px}
+.diff-btn{flex:1;padding:10px;border:2px solid #333;background:transparent;color:#aaa;border-radius:8px;cursor:pointer;font-weight:600;font-size:.85rem;transition:all .2s}
+.diff-btn.active{border-color:#e94560;color:#fff;background:rgba(233,69,96,.2)}
+.diff-label{font-size:.85rem;color:#888;text-align:center}
 
-        .board-row {
-            display: flex;
-        }
+.game-status{font-size:1.3rem;text-align:center;padding:10px;border-radius:8px;font-weight:700;display:none}
+.game-status.active{display:block}
+.game-status.win{background:rgba(78,204,163,.2);color:#4ecca3}
+.game-status.draw{background:rgba(255,255,0,.15);color:#ffd700}
 
-        .square {
-            width: 70px;
-            height: 70px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 48px;
-            cursor: pointer;
-            transition: all 0.3s;
-            position: relative;
-        }
+/* Responsive */
+@media(max-width:900px){
+  .game-layout{flex-direction:column;align-items:center}
+  .right-panel{width:100%;max-height:200px;flex-direction:row}
+  .history-panel{flex:1}
+  .controls{flex-direction:row;flex-wrap:wrap;justify-content:center}
+}
+@media(min-height:700px) and (min-width:1000px){
+  .square{font-size:3.5rem}
+}
 
-        @media (max-width: 768px) {
-            .square {
-                width: 55px;
-                height: 55px;
-                font-size: 38px;
-            }
-        }
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:100}
+.overlay.active{display:flex}
+.overlay-box{background:#1a1a2e;padding:30px;border-radius:16px;text-align:center;border:2px solid #e94560}
+.overlay-box h2{margin-bottom:15px}
+.overlay-box button{margin:5px;padding:12px 24px;border:none;border-radius:8px;cursor:pointer;font-size:1rem;font-weight:600;color:#fff}
 
-        @media (max-width: 480px) {
-            .square {
-                width: 45px;
-                height: 45px;
-                font-size: 32px;
-            }
-        }
-
-        .square.light {
-            background-color: #FFFACD;
-        }
-
-        .square.dark {
-            background-color: #FFB6C1;
-        }
-
-        .square.selected {
-            background-color: #32CD32 !important;
-            box-shadow: 0 0 20px #FFD700, inset 0 0 0 3px gold;
-            transform: scale(1.08);
-        }
-
-        .square.valid-move::after {
-            content: '';
-            position: absolute;
-            width: 20px;
-            height: 20px;
-            background: rgba(255, 215, 0, 0.8);
-            border-radius: 50%;
-            pointer-events: none;
-            box-shadow: 0 0 10px rgba(255, 215, 0, 0.9);
-        }
-
-        .square.check {
-            background-color: #FF1493 !important;
-            animation: shake 0.4s ease-in-out infinite;
-            box-shadow: 0 0 20px #FF1493;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        .sidebar {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-        }
-
-        .status {
-            background: #e9ecef;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .turn-indicator {
-            font-size: 20px;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-
-        .turn-white { color: #2c3e50; }
-        .turn-black { color: #34495e; }
-
-        .mode-selector {
-            margin: 15px 0;
-        }
-
-        .difficulty-selector {
-            margin: 15px 0;
-            display: block;
-        }
-
-        .mode-btn, .difficulty-btn {
-            padding: 10px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .mode-btn.active, .difficulty-btn.active {
-            background: #667eea;
-            color: white;
-        }
-
-        .connection-status {
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .connected { background: #d4edda; color: #155724; }
-        .disconnected { background: #f8d7da; color: #721c24; }
-
-        .room-code {
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            background: #2c3e50;
-            color: white;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            letter-spacing: 5px;
-        }
-
-        .room-section {
-            margin: 15px 0;
-        }
-
-        .qr-code {
-            text-align: center;
-            margin: 15px 0;
-        }
-
-        .qr-code canvas {
-            max-width: 150px;
-            height: auto;
-        }
-
-        .move-history {
-            max-height: 300px;
-            overflow-y: auto;
-            margin-top: 15px;
-            font-size: 12px;
-        }
-
-        .move-history h4 {
-            margin-bottom: 10px;
-        }
-
-        .move-list {
-            display: grid;
-            grid-template-columns: auto auto;
-            gap: 5px;
-        }
-
-        .move-item {
-            padding: 5px;
-            background: white;
-            border-radius: 3px;
-        }
-
-        button {
-            padding: 10px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background: #667eea;
-            color: white;
-            font-size: 14px;
-        }
-
-        button:hover {
-            background: #5a67d8;
-        }
-
-        .reset-btn {
-            background: #e74c3c;
-        }
-
-        .reset-btn:hover {
-            background: #c0392b;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            text-align: center;
-            animation: fadeIn 0.3s;
-        }
-
-        .modal-content h2 {
-            margin-bottom: 20px;
-        }
-
-        .modal-content button {
-            margin-top: 20px;
-            padding: 10px 30px;
-        }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+.disconnected-banner{display:none;position:fixed;top:0;left:0;width:100%;padding:12px;background:#e94560;text-align:center;font-weight:700;z-index:50}
+.disconnected-banner.active{display:block}
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>♞ Chess Controller - Main Display ♞</h1>
-        
-        <div class="main-content">
-            <div class="board-container">
-                <div class="chess-board" id="chess-board"></div>
-            </div>
-            
-            <div class="sidebar">
-                <div class="status">
-                    <div class="connection-status" id="connection-status">Disconnected</div>
-                    <div class="turn-indicator" id="turn-indicator">
-                        <span id="turn-text">White's Turn</span>
-                    </div>
-                </div>
-                
-                <div class="mode-selector">
-                    <h4>Game Mode:</h4>
-                    <button class="mode-btn active" data-mode="ai">🤖 vs Computer</button>
-                    <button class="mode-btn" data-mode="two-player">👥 2 Player</button>
-                </div>
-                
-                <div id="difficulty-selector" class="difficulty-selector">
-                    <h4>Computer Difficulty:</h4>
-                    <button class="difficulty-btn" data-diff="easy">🐣 Easy</button>
-                    <button class="difficulty-btn active" data-diff="medium">🐥 Medium</button>
-                    <button class="difficulty-btn" data-diff="hard">🐔 Hard</button>
-                </div>
-                
-                <div class="room-section">
-                    <h4>Room Code:</h4>
-                    <div class="room-code" id="room-code">Loading...</div>
-                    <div class="qr-code" id="qr-code"></div>
-                    <button id="refresh-qr">🔄 Refresh QR</button>
-                </div>
-                
-                <div class="controls">
-                    <button id="reset-game" class="reset-btn">🔄 Reset Game</button>
-                </div>
-                
-                <div class="move-history">
-                    <h4>Move History:</h4>
-                    <div class="move-list" id="move-list"></div>
-                </div>
-            </div>
-        </div>
+
+<div class="disconnected-banner" id="disconnectBanner">⚠️ Player disconnected - waiting for reconnection...</div>
+
+<!-- Landing Screen -->
+<div id="landing">
+  <h1>♟ Chess Arena</h1>
+  <p class="subtitle">Use your phone as a controller</p>
+  <button class="mode-btn ai" onclick="selectMode('ai')">🤖 Play vs Computer</button>
+  <button class="mode-btn pvp" onclick="selectMode('pvp')">👥 Two Players (2 Phones)</button>
+</div>
+
+<!-- Connection Screen -->
+<div id="connection">
+  <h2>📱 Connect Your Phone</h2>
+  <div id="qrcode-container"></div>
+  <div class="room-code" id="roomCodeDisplay"></div>
+  <div class="conn-status" id="connStatus">Waiting for controller to connect...</div>
+  <div class="conn-count" id="connCount"></div>
+  <div class="spinner" id="connSpinner"></div>
+  <p style="color:#666;font-size:.9rem;margin-top:10px">Open <strong>controller.html</strong> on your phone and enter the room code</p>
+</div>
+
+<!-- Game Screen -->
+<div id="game">
+  <div class="game-layout">
+    <div class="board-section">
+      <div class="turn-banner white" id="turnBanner">⬜ White's Turn</div>
+      <div class="game-status" id="gameStatus"></div>
+      <div class="board-container">
+        <div class="board" id="board"></div>
+      </div>
     </div>
-    
-    <div id="game-over-modal" class="modal">
-        <div class="modal-content">
-            <h2 id="modal-message">Game Over!</h2>
-            <button onclick="closeModal()">Play Again</button>
+    <div class="right-panel">
+      <div class="history-panel">
+        <h3>📜 Move History</h3>
+        <div class="history-list" id="historyList"></div>
+      </div>
+      <div class="controls">
+        <div class="diff-label" id="diffLabel" style="display:none">AI Difficulty</div>
+        <div class="difficulty-selector" id="diffSelector" style="display:none">
+          <button class="diff-btn" data-diff="easy" onclick="setDifficulty('easy')">Easy</button>
+          <button class="diff-btn active" data-diff="medium" onclick="setDifficulty('medium')">Medium</button>
+          <button class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')">Hard</button>
         </div>
+        <button class="ctrl-btn new-game" onclick="newGame()">🔄 New Game</button>
+        <button class="ctrl-btn resign" onclick="resignGame()">🏳️ Resign</button>
+      </div>
     </div>
-    
-    <script src="chess-engine.js"></script>
-    <script src="ai-opponent.js"></script>
-    <script src="webrtc-connection.js"></script>
-    <script src="gamification.js"></script>
-    
-    <script>
-        let engine = new ChessEngine();
-        let ai = new ChessAI('medium');
-        let gameMode = 'ai';
-        let webrtc = null;
-        let roomCode = null;
-        let selectedSquare = null;
-        let controllers = { white: null, black: null };
-        
-        // Piece Unicode mapping - Standard Chess Symbols
-        const pieceMap = {
-            'wr': '♖', 'wn': '♘', 'wb': '♗', 'wq': '♕', 'wk': '♔', 'wp': '♙',
-            'br': '♜', 'bn': '♞', 'bb': '♝', 'bq': '♛', 'bk': '♚', 'bp': '♟'
-        };
-        
-        // Initialize
-        function init() {
-            generateRoomCode();
-            setupEventListeners();
-            renderBoard();
-            
-            // Check for signaling messages periodically
-            setInterval(() => {
-                if (webrtc) {
-                    webrtc.checkSignaling();
-                }
-            }, 500);
+  </div>
+</div>
+
+<!-- Promotion Overlay -->
+<div class="overlay" id="promoOverlay">
+  <div class="overlay-box">
+    <h2>Promote Pawn</h2>
+    <button style="background:#4ecca3;font-size:2rem" onclick="doPromotion('q')">♛</button>
+    <button style="background:#0f3460;font-size:2rem" onclick="doPromotion('r')">♜</button>
+    <button style="background:#0f3460;font-size:2rem" onclick="doPromotion('b')">♝</button>
+    <button style="background:#0f3460;font-size:2rem" onclick="doPromotion('n')">♞</button>
+  </div>
+</div>
+
+<script>
+// ===== GLOBALS =====
+let game, peer, connections = [], gameMode = null, difficulty = 'medium';
+let roomCode = '', lastMove = null, moveList = [];
+let pendingPromotion = null;
+const PIECE_MAP = {
+  K:'♔',Q:'♕',R:'♖',B:'♗',N:'♘',P:'♙',
+  k:'♚',q:'♛',r:'♜',b:'♝',n:'♞',p:'♟'
+};
+const requiredConns = () => gameMode === 'pvp' ? 2 : 1;
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+// ===== AUDIO =====
+function playBeep(freq, dur) {
+  try {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.frequency.value = freq; g.gain.value = 0.15;
+    o.start(); g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur/1000);
+    o.stop(audioCtx.currentTime + dur/1000);
+  } catch(e) {}
+}
+function soundMove() { playBeep(300, 50); }
+function soundCapture() { playBeep(400, 80); }
+function soundCheck() { playBeep(500, 60); setTimeout(() => playBeep(500, 60), 120); }
+function soundWin() { playBeep(300,100); setTimeout(()=>playBeep(600,100),150); setTimeout(()=>playBeep(900,200),300); }
+
+// ===== SCREENS =====
+function showScreen(id) {
+  ['landing','connection','game'].forEach(s => {
+    document.getElementById(s).style.display = s === id ? (s === 'game' ? 'block' : 'flex') : 'none';
+  });
+}
+
+// ===== MODE SELECTION =====
+function selectMode(mode) {
+  gameMode = mode;
+  game = new Chess();
+  moveList = []; lastMove = null;
+  initPeer();
+  showScreen('connection');
+  if (mode === 'ai') {
+    document.getElementById('diffLabel').style.display = 'block';
+    document.getElementById('diffSelector').style.display = 'flex';
+  } else {
+    document.getElementById('diffLabel').style.display = 'none';
+    document.getElementById('diffSelector').style.display = 'none';
+  }
+}
+
+// ===== PEER CONNECTION =====
+function generateCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let c = '';
+  for (let i = 0; i < 4; i++) c += chars[Math.floor(Math.random()*chars.length)];
+  return c;
+}
+
+function initPeer() {
+  roomCode = generateCode();
+  const peerId = 'chess-display-' + roomCode.toLowerCase();
+  document.getElementById('roomCodeDisplay').textContent = '🔴 ' + roomCode;
+  document.getElementById('connCount').textContent = `0/${requiredConns()} connected`;
+
+  // QR Code
+  const qrContainer = document.getElementById('qrcode-container');
+  qrContainer.innerHTML = '';
+  const controllerUrl = window.location.href.replace('index.html','controller.html') + '?room=' + roomCode;
+  new QRCode(qrContainer, { text: controllerUrl, width: 220, height: 220, colorDark:'#1a1a2e', colorLight:'#ffffff' });
+
+  peer = new Peer(peerId, { debug: 0 });
+  peer.on('open', () => { console.log('Display peer open:', peerId); });
+  peer.on('connection', handleConnection);
+  peer.on('error', (err) => { console.error('Peer error:', err); });
+}
+
+function handleConnection(conn) {
+  conn.on('open', () => {
+    connections.push(conn);
+    const count = connections.length;
+    document.getElementById('connCount').textContent = `${count}/${requiredConns()} connected`;
+    document.getElementById('connStatus').textContent = count >= requiredConns() ? '✅ All players connected!' : 'Waiting for more players...';
+
+    // Assign color
+    const color = count === 1 ? 'w' : 'b';
+    conn.playerColor = color;
+    conn.send(JSON.stringify({ type: 'assign', color: color, mode: gameMode }));
+
+    if (count >= requiredConns()) {
+      setTimeout(() => startGame(), 800);
+    }
+  });
+
+  conn.on('data', (data) => {
+    try {
+      const msg = JSON.parse(data);
+      handleControllerMessage(conn, msg);
+    } catch(e) {}
+  });
+
+  conn.on('close', () => {
+    connections = connections.filter(c => c !== conn);
+    document.getElementById('disconnectBanner').classList.add('active');
+    setTimeout(() => {
+      if (connections.length < requiredConns()) {
+        document.getElementById('disconnectBanner').classList.add('active');
+      }
+    }, 500);
+  });
+}
+
+function handleControllerMessage(conn, msg) {
+  if (msg.type === 'move') {
+    if (game.game_over()) return;
+    const turn = game.turn();
+    if (gameMode === 'pvp' && conn.playerColor !== turn) return;
+    if (gameMode === 'ai' && turn !== 'w') return;
+
+    attemptMove(msg.from, msg.to, msg.promotion);
+  }
+  if (msg.type === 'get_moves') {
+    const moves = game.moves({ square: msg.square, verbose: true });
+    conn.send(JSON.stringify({ type: 'valid_moves', square: msg.square, moves: moves }));
+  }
+  if (msg.type === 'request_state') {
+    sendStateToAll();
+  }
+}
+
+// ===== GAME LOGIC =====
+function startGame() {
+  showScreen('game');
+  renderBoard();
+  updateTurnBanner();
+  renderHistory();
+  sendStateToAll();
+}
+
+function attemptMove(from, to, promotion) {
+  const moveObj = { from, to, promotion: promotion || undefined };
+  const result = game.move(moveObj);
+  if (!result) {
+    // Try with promotion
+    const promoResult = game.move({ from, to, promotion: 'q' });
+    if (!promoResult) return;
+    moveList.push(promoResult);
+  } else {
+    moveList.push(result);
+  }
+  const m = moveList[moveList.length - 1];
+  lastMove = { from: m.from, to: m.to };
+
+  // Audio
+  if (m.captured) soundCapture();
+  else soundMove();
+  if (game.in_check()) soundCheck();
+
+  renderBoard();
+  updateTurnBanner();
+  renderHistory();
+  sendStateToAll();
+  checkGameEnd();
+
+  // AI move
+  if (gameMode === 'ai' && !game.game_over() && game.turn() === 'b') {
+    setTimeout(makeAIMove, 500);
+  }
+}
+
+function makeAIMove() {
+  if (game.game_over()) return;
+  const moves = game.moves({ verbose: true });
+  if (moves.length === 0) return;
+
+  let move;
+  if (difficulty === 'easy') {
+    move = moves[Math.floor(Math.random() * moves.length)];
+  } else if (difficulty === 'medium') {
+    move = pickMediumMove(moves);
+  } else {
+    move = pickHardMove(moves);
+  }
+
+  const result = game.move(move);
+  if (result) {
+    moveList.push(result);
+    lastMove = { from: result.from, to: result.to };
+    if (result.captured) soundCapture();
+    else soundMove();
+    if (game.in_check()) soundCheck();
+    renderBoard();
+    updateTurnBanner();
+    renderHistory();
+    sendStateToAll();
+    checkGameEnd();
+  }
+}
+
+function pickMediumMove(moves) {
+  // Prefer captures and checks, otherwise random
+  const captures = moves.filter(m => m.captured);
+  const checks = moves.filter(m => {
+    const g2 = new Chess(game.fen());
+    g2.move(m);
+    return g2.in_check();
+  });
+  if (checks.length > 0 && Math.random() > 0.3) return checks[Math.floor(Math.random()*checks.length)];
+  if (captures.length > 0 && Math.random() > 0.3) return captures[Math.floor(Math.random()*captures.length)];
+  return moves[Math.floor(Math.random()*moves.length)];
+}
+
+function pickHardMove(moves) {
+  const pieceValues = { p:1, n:3, b:3, r:5, q:9, k:0 };
+  let best = -Infinity, bestMoves = [];
+
+  for (const m of moves) {
+    let score = 0;
+    const g2 = new Chess(game.fen());
+    g2.move(m);
+    if (g2.in_checkmate()) return m;
+    if (g2.in_check()) score += 3;
+    if (m.captured) score += pieceValues[m.captured] * 2;
+    // Center control
+    const col = m.to.charCodeAt(0) - 97, row = parseInt(m.to[1]);
+    score += (3.5 - Math.abs(col - 3.5)) * 0.3 + (3.5 - Math.abs(row - 4.5)) * 0.3;
+    // Penalize moving to attacked squares
+    const oppMoves = g2.moves({ verbose: true });
+    if (oppMoves.some(om => om.to === m.to && om.captured)) score -= pieceValues[m.piece] * 0.5;
+    // Develop pieces early
+    if (moveList.length < 10 && (m.piece === 'n' || m.piece === 'b')) score += 1;
+
+    score += (Math.random() - 0.5) * 0.5; // tiny randomness
+
+    if (score > best) { best = score; bestMoves = [m]; }
+    else if (score === best) bestMoves.push(m);
+  }
+  return bestMoves[Math.floor(Math.random() * bestMoves.length)];
+}
+
+function checkGameEnd() {
+  const statusEl = document.getElementById('gameStatus');
+  if (game.in_checkmate()) {
+    const winner = game.turn() === 'w' ? 'Black' : 'White';
+    statusEl.textContent = `🏆 Checkmate! ${winner} wins!`;
+    statusEl.className = 'game-status active win';
+    soundWin();
+    try { confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 } }); } catch(e) {}
+    broadcastAll({ type: 'game_over', result: 'checkmate', winner });
+  } else if (game.in_stalemate()) {
+    statusEl.textContent = '🤝 Stalemate - Draw!';
+    statusEl.className = 'game-status active draw';
+    broadcastAll({ type: 'game_over', result: 'stalemate' });
+  } else if (game.in_draw()) {
+    statusEl.textContent = '🤝 Draw!';
+    statusEl.className = 'game-status active draw';
+    broadcastAll({ type: 'game_over', result: 'draw' });
+  } else {
+    statusEl.className = 'game-status';
+  }
+}
+
+// ===== RENDERING =====
+function renderBoard() {
+  const board = document.getElementById('board');
+  const boardSize = Math.min(window.innerWidth - 340, window.innerHeight - 140, 600);
+  board.style.width = boardSize + 'px';
+  board.style.height = boardSize + 'px';
+  board.innerHTML = '';
+
+  const position = game.board();
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const sq = document.createElement('div');
+      const isLight = (r + c) % 2 === 0;
+      sq.className = 'square ' + (isLight ? 'light' : 'dark');
+
+      const file = String.fromCharCode(97 + c);
+      const rank = 8 - r;
+      const sqName = file + rank;
+
+      if (lastMove) {
+        if (sqName === lastMove.from) sq.classList.add('last-from');
+        if (sqName === lastMove.to) sq.classList.add('last-to');
+      }
+
+      const piece = position[r][c];
+      if (piece) {
+        const key = piece.color === 'w' ? piece.type.toUpperCase() : piece.type.toLowerCase();
+        const span = document.createElement('span');
+        span.className = 'piece';
+        span.textContent = PIECE_MAP[key];
+        sq.appendChild(span);
+
+        // Check highlight
+        if (piece.type === 'k' && game.in_check() && piece.color === game.turn()) {
+          sq.classList.add('check-king');
         }
-        
-        // Generate random room code
-        function generateRoomCode() {
-            roomCode = Math.random().toString(36).substring(2, 6).toUpperCase();
-            document.getElementById('room-code').textContent = roomCode;
-            
-            // Generate QR code
-            const controllerUrl = `${window.location.origin}${window.location.pathname.replace('index.html', 'controller.html')}?room=${roomCode}`;
-            new QRCode(document.getElementById('qr-code'), {
-                text: controllerUrl,
-                width: 150,
-                height: 150
-            });
-            
-            // Initialize WebRTC as host
-            initWebRTC();
-        }
-        
-        // Initialize WebRTC connection
-        async function initWebRTC() {
-            webrtc = new WebRTCConnection(roomCode, true);
-            webrtc.onMessage(handleMessage);
-            await webrtc.initialize();
-            
-            // Check for existing signaling
-            webrtc.checkSignaling();
-            
-            // Update connection status periodically
-            const statusInterval = setInterval(() => {
-                const statusEl = document.getElementById('connection-status');
-                if (!webrtc) return;
-                
-                if (webrtc.connectionStatus === 'connected') {
-                    statusEl.textContent = '✅ Connected';
-                    statusEl.className = 'connection-status connected';
-                } else {
-                    statusEl.textContent = '🔌 Waiting for players...';
-                    statusEl.className = 'connection-status disconnected';
-                }
-            }, 500);
-        }
-        
-        // Handle incoming messages
-        function handleMessage(message) {
-            console.log('Received:', message);
-            
-            switch(message.type) {
-                case 'MOVE':
-                    handleMoveFromController(message.data);
-                    break;
-                case 'REGISTER':
-                    handleControllerRegistration(message.data);
-                    break;
-            }
-        }
-        
-        // Handle controller registration for 2-player mode
-        function handleControllerRegistration(data) {
-            if (gameMode === 'two-player') {
-                const color = !controllers.white ? 'white' : (!controllers.black ? 'black' : null);
-                if (color) {
-                    controllers[color] = data.controllerId;
-                    webrtc.sendMessage('REGISTERED', { color });
-                    
-                    // Start game if both controllers connected
-                    if (controllers.white && controllers.black) {
-                        startTwoPlayerGame();
-                    }
-                }
-            }
-        }
-        
-        // Start two-player game
-        function startTwoPlayerGame() {
-            const fen = engine.getFEN();
-            webrtc.sendMessage('SYNC', { fen, currentTurn: engine.currentTurn });
-        }
-        
-        // Handle move from controller
-        function handleMoveFromController(data) {
-            if (gameMode === 'two-player') {
-                // Verify it's the correct controller's turn
-                const expectedColor = engine.currentTurn;
-                if ((expectedColor === 'white' && data.controllerId === controllers.white) ||
-                    (expectedColor === 'black' && data.controllerId === controllers.black)) {
-                    executeMove(data.from, data.to);
-                }
-            } else if (gameMode === 'ai') {
-                // Only accept moves when it's player's turn (white)
-                if (engine.currentTurn === 'white') {
-                    executeMove(data.from, data.to);
-                }
-            }
-        }
-        
-        // Execute move
-        function executeMove(from, to) {
-            const capturedPiece = engine.getPiece(to.row, to.col);
-            const success = engine.makeMove(from.row, from.col, to.row, to.col);
-            
-            if (success) {
-                // Play sounds and animations
-                if (capturedPiece) {
-                    gameSounds.playCapture();
-                    gameStats.recordCapture(capturedPiece);
-                } else {
-                    gameSounds.playMove();
-                }
-                
-                // Check if in check
-                const nextPlayerInCheck = engine.isInCheck(engine.currentTurn);
-                if (nextPlayerInCheck) {
-                    gameSounds.playCheck();
-                }
-                
-                renderBoard();
-                updateMoveHistory();
-                updateTurnDisplay();
-                
-                // Sync with controller
-                if (webrtc && webrtc.connectionStatus === 'connected') {
-                    webrtc.sendMessage('SYNC', { fen: engine.getFEN(), currentTurn: engine.currentTurn });
-                }
-                
-                // Check game over
-                if (engine.gameOver) {
-                    if (engine.winner && engine.winner !== 'draw') {
-                        gameSounds.playVictory();
-                        gameStats.recordCheckmate(engine.winner);
-                        GameAnimations.showCheckmate(engine.winner === 'white' ? '🎉 WHITE WINS! 🎉' : '🎉 BLACK WINS! 🎉');
-                    } else if (engine.winner === 'draw') {
-                        gameSounds.playCheckmate();
-                        GameAnimations.showCheckmate("🤝 DRAW! 🤝");
-                    }
-                    showGameOver();
-                    return;
-                }
-                
-                // AI move if in AI mode and game not over
-                if (gameMode === 'ai' && engine.currentTurn === 'black' && !engine.gameOver) {
-                    setTimeout(() => {
-                        const aiMove = ai.getMove(engine);
-                        if (aiMove) {
-                            const aiCapturedPiece = engine.getPiece(aiMove.to.row, aiMove.to.col);
-                            engine.makeMove(aiMove.from.row, aiMove.from.col, aiMove.to.row, aiMove.to.col);
-                            
-                            // Play sounds
-                            if (aiCapturedPiece) {
-                                gameSounds.playCapture();
-                            } else {
-                                gameSounds.playMove();
-                            }
-                            
-                            renderBoard();
-                            updateMoveHistory();
-                            updateTurnDisplay();
-                            
-                            // Sync with controller
-                            if (webrtc && webrtc.connectionStatus === 'connected') {
-                                webrtc.sendMessage('SYNC', { fen: engine.getFEN(), currentTurn: engine.currentTurn });
-                            }
-                            
-                            if (engine.gameOver) {
-                                if (engine.winner && engine.winner !== 'draw') {
-                                    gameSounds.playCheckmate();
-                                    GameAnimations.showCheckmate(engine.winner === 'white' ? '🎉 YOU WIN! 🎉' : '💻 AI WINS! 💻');
-                                } else {
-                                    GameAnimations.showCheckmate("🤝 DRAW! 🤝");
-                                }
-                                showGameOver();
-                            }
-                        }
-                    }, 500);
-                }
-            }
-        }
-        
-        // Render chess board
-        function renderBoard() {
-            const boardEl = document.getElementById('chess-board');
-            boardEl.innerHTML = '';
-            
-            const kingPos = engine.findKing(engine.currentTurn);
-            const isInCheck = kingPos && engine.isInCheck(engine.currentTurn);
-            
-            for (let i = 0; i < 8; i++) {
-                const row = document.createElement('div');
-                row.className = 'board-row';
-                
-                for (let j = 0; j < 8; j++) {
-                    const piece = engine.getPiece(i, j);
-                    const square = document.createElement('div');
-                    square.className = `square ${(i + j) % 2 === 0 ? 'light' : 'dark'}`;
-                    
-                    if (selectedSquare && selectedSquare.row === i && selectedSquare.col === j) {
-                        square.classList.add('selected');
-                    }
-                    
-                    if (isInCheck && kingPos && kingPos.row === i && kingPos.col === j) {
-                        square.classList.add('check');
-                    }
-                    
-                    if (piece) {
-                        square.textContent = pieceMap[piece] || '?';
-                        square.style.fontSize = '48px';
-                    }
-                    
-                    // Add click handler for testing (optional)
-                    square.onclick = () => handleSquareClick(i, j);
-                    
-                    row.appendChild(square);
-                }
-                boardEl.appendChild(row);
-            }
-        }
-        
-        // Handle square click (for testing on main display)
-        function handleSquareClick(row, col) {
-            if (!selectedSquare) {
-                const piece = engine.getPiece(row, col);
-                if (piece && piece[0] === (engine.currentTurn === 'white' ? 'w' : 'b')) {
-                    selectedSquare = { row, col };
-                    renderBoard();
-                    
-                    // Highlight valid moves
-                    const validMoves = engine.getLegalMovesForPiece(row, col);
-                    validMoves.forEach(move => {
-                        const square = document.querySelector(`.board-row:nth-child(${move.row + 1}) .square:nth-child(${move.col + 1})`);
-                        if (square) square.classList.add('valid-move');
-                    });
-                }
-            } else {
-                if (engine.isValidMove(selectedSquare.row, selectedSquare.col, row, col)) {
-                    executeMove(selectedSquare, { row, col });
-                }
-                selectedSquare = null;
-                renderBoard();
-            }
-        }
-        
-        // Update turn display
-        function updateTurnDisplay() {
-            const turnText = document.getElementById('turn-text');
-            turnText.textContent = `${engine.currentTurn === 'white' ? '⚪ White' : '⚫ Black'}'s Turn`;
-            
-            if (engine.gameOver) {
-                let winnerText = '';
-                if (engine.winner === 'white') winnerText = '⚪ White Wins!';
-                else if (engine.winner === 'black') winnerText = '⚫ Black Wins!';
-                else winnerText = 'Draw!';
-                turnText.textContent = winnerText;
-            }
-        }
-        
-        // Update move history
-        function updateMoveHistory() {
-            const moveList = document.getElementById('move-list');
-            moveList.innerHTML = '';
-            
-            engine.moveHistory.forEach((move, index) => {
-                const moveNum = Math.floor(index / 2) + 1;
-                const moveItem = document.createElement('div');
-                moveItem.className = 'move-item';
-                
-                if (index % 2 === 0) {
-                    moveItem.innerHTML = `<strong>${moveNum}.</strong> ${move.notation}`;
-                } else {
-                    moveItem.innerHTML = `${move.notation}`;
-                }
-                
-                moveList.appendChild(moveItem);
-            });
-        }
-        
-        // Show game over modal
-        function showGameOver() {
-            const modal = document.getElementById('game-over-modal');
-            const message = document.getElementById('modal-message');
-            
-            if (engine.winner === 'white') message.textContent = '🏆 White Wins! 🏆';
-            else if (engine.winner === 'black') message.textContent = '🏆 Black Wins! 🏆';
-            else message.textContent = '🤝 Draw! 🤝';
-            
-            modal.style.display = 'flex';
-        }
-        
-        // Reset game
-        function resetGame() {
-            engine.resetGame();
-            selectedSquare = null;
-            renderBoard();
-            updateMoveHistory();
-            updateTurnDisplay();
-            
-            // Sync with controller
-            if (webrtc && webrtc.connectionStatus === 'connected') {
-                webrtc.sendMessage('SYNC', { fen: engine.getFEN(), currentTurn: engine.currentTurn });
-            }
-        }
-        
-        // Setup event listeners
-        function setupEventListeners() {
-            document.getElementById('reset-game').onclick = resetGame;
-            document.getElementById('refresh-qr').onclick = () => {
-                // Clear existing QR and regenerate without changing room code
-                const qrEl = document.getElementById('qr-code');
-                qrEl.innerHTML = '';
-                
-                const controllerUrl = `${window.location.origin}${window.location.pathname.replace('index.html', 'controller.html')}?room=${roomCode}`;
-                new QRCode(qrEl, {
-                    text: controllerUrl,
-                    width: 150,
-                    height: 150
-                });
-            };
-            
-            document.querySelectorAll('.mode-btn').forEach(btn => {
-                btn.onclick = () => {
-                    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    gameMode = btn.dataset.mode;
-                    
-                    // Show/hide difficulty selector
-                    const diffSelector = document.getElementById('difficulty-selector');
-                    diffSelector.style.display = gameMode === 'ai' ? 'block' : 'none';
-                    
-                    // Reset game when changing mode
-                    resetGame();
-                };
-            });
-            
-            document.querySelectorAll('.difficulty-btn').forEach(btn => {
-                btn.onclick = () => {
-                    document.querySelectorAll('.difficulty-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    ai.difficulty = btn.dataset.diff;
-                };
-            });
-        }
-        
-        // Close modal
-        window.closeModal = function() {
-            document.getElementById('game-over-modal').style.display = 'none';
-            resetGame();
-        };
-        
-        // Start the app
-        init();
-    </script>
+      }
+
+      // Labels
+      if (c === 0) {
+        const lbl = document.createElement('span');
+        lbl.className = 'rank-label';
+        lbl.textContent = rank;
+        sq.appendChild(lbl);
+      }
+      if (r === 7) {
+        const lbl = document.createElement('span');
+        lbl.className = 'file-label';
+        lbl.textContent = file;
+        sq.appendChild(lbl);
+      }
+
+      board.appendChild(sq);
+    }
+  }
+}
+
+function updateTurnBanner() {
+  const banner = document.getElementById('turnBanner');
+  const turn = game.turn();
+  if (game.game_over()) {
+    banner.textContent = '🏁 Game Over';
+    banner.className = 'turn-banner white';
+    return;
+  }
+  if (turn === 'w') {
+    banner.textContent = '⬜ White\'s Turn';
+    banner.className = 'turn-banner white' + (game.in_check() ? ' check' : '');
+  } else {
+    banner.textContent = '⬛ Black\'s Turn';
+    banner.className = 'turn-banner black' + (game.in_check() ? ' check' : '');
+  }
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  list.innerHTML = '';
+  const history = game.history();
+  for (let i = 0; i < history.length; i += 2) {
+    const row = document.createElement('div');
+    row.className = 'move-row';
+    const num = document.createElement('span');
+    num.className = 'move-num';
+    num.textContent = (Math.floor(i/2) + 1) + '.';
+    const w = document.createElement('span');
+    w.className = 'move-white';
+    w.textContent = history[i] || '';
+    const b = document.createElement('span');
+    b.className = 'move-black';
+    b.textContent = history[i+1] || '';
+    row.appendChild(num);
+    row.appendChild(w);
+    row.appendChild(b);
+    list.appendChild(row);
+  }
+  list.scrollTop = list.scrollHeight;
+}
+
+// ===== COMMUNICATION =====
+function sendStateToAll() {
+  const state = {
+    type: 'state',
+    fen: game.fen(),
+    turn: game.turn(),
+    history: game.history(),
+    lastMove: lastMove,
+    gameOver: game.game_over(),
+    inCheck: game.in_check(),
+    result: game.in_checkmate() ? 'checkmate' : game.in_stalemate() ? 'stalemate' : game.in_draw() ? 'draw' : null
+  };
+  broadcastAll(state);
+}
+
+function broadcastAll(msg) {
+  const data = JSON.stringify(msg);
+  connections.forEach(c => { try { c.send(data); } catch(e) {} });
+}
+
+// ===== CONTROLS =====
+function setDifficulty(d) {
+  difficulty = d;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.toggle('active', b.dataset.diff === d));
+}
+
+function newGame() {
+  game = new Chess();
+  moveList = [];
+  lastMove = null;
+  document.getElementById('gameStatus').className = 'game-status';
+  renderBoard();
+  updateTurnBanner();
+  renderHistory();
+  sendStateToAll();
+}
+
+function resignGame() {
+  if (game.game_over()) return;
+  const winner = game.turn() === 'w' ? 'Black' : 'White';
+  const statusEl = document.getElementById('gameStatus');
+  statusEl.textContent = `🏳️ ${game.turn() === 'w' ? 'White' : 'Black'} resigned. ${winner} wins!`;
+  statusEl.className = 'game-status active win';
+  broadcastAll({ type: 'game_over', result: 'resign', winner });
+}
+
+function doPromotion(piece) {
+  document.getElementById('promoOverlay').classList.remove('active');
+  if (pendingPromotion) {
+    attemptMove(pendingPromotion.from, pendingPromotion.to, piece);
+    pendingPromotion = null;
+  }
+}
+
+// ===== RESIZE =====
+window.addEventListener('resize', () => { if (document.getElementById('game').style.display !== 'none') renderBoard(); });
+</script>
 </body>
 </html>
