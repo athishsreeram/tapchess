@@ -313,10 +313,10 @@
         let controllerId = Math.random().toString(36).substring(2, 10);
         let isMyTurn = false;
         
-        // Piece Unicode mapping - Toddler friendly!
+        // Piece Unicode mapping - Standard Chess Symbols
         const pieceMap = {
-            'wr': '🏰', 'wn': '🐴', 'wb': '👼', 'wq': '👑', 'wk': '🤴', 'wp': '⚪',
-            'br': '💀', 'bn': '🦓', 'bb': '👿', 'bq': '🎭', 'bk': '👹', 'bp': '⚫'
+            'wr': '♖', 'wn': '♘', 'wb': '♗', 'wq': '♕', 'wk': '♔', 'wp': '♙',
+            'br': '♜', 'bn': '♞', 'bb': '♝', 'bq': '♛', 'bk': '♚', 'bp': '♟'
         };
         
         // Initialize
@@ -341,7 +341,7 @@
         // Initialize WebRTC connection
         async function initWebRTC() {
             webrtc = new WebRTCConnection(roomCode, false);
-            webrtc.onMessage = handleMessage;
+            webrtc.onMessage(handleMessage);
             await webrtc.initialize();
             
             // Register with main display

@@ -153,6 +153,11 @@
             margin: 15px 0;
         }
 
+        .difficulty-selector {
+            margin: 15px 0;
+            display: block;
+        }
+
         .mode-btn, .difficulty-btn {
             padding: 10px;
             margin: 5px;
@@ -189,6 +194,10 @@
             border-radius: 5px;
             margin: 10px 0;
             letter-spacing: 5px;
+        }
+
+        .room-section {
+            margin: 15px 0;
         }
 
         .qr-code {
@@ -354,10 +363,10 @@
         let selectedSquare = null;
         let controllers = { white: null, black: null };
         
-        // Piece Unicode mapping - Toddler friendly!
+        // Piece Unicode mapping - Standard Chess Symbols
         const pieceMap = {
-            'wr': '🏰', 'wn': '🐴', 'wb': '👼', 'wq': '👑', 'wk': '🤴', 'wp': '⚪',
-            'br': '💀', 'bn': '🦓', 'bb': '👿', 'bq': '🎭', 'bk': '👹', 'bp': '⚫'
+            'wr': '♖', 'wn': '♘', 'wb': '♗', 'wq': '♕', 'wk': '♔', 'wp': '♙',
+            'br': '♜', 'bn': '♞', 'bb': '♝', 'bq': '♛', 'bk': '♚', 'bp': '♟'
         };
         
         // Initialize
@@ -394,23 +403,25 @@
         // Initialize WebRTC connection
         async function initWebRTC() {
             webrtc = new WebRTCConnection(roomCode, true);
-            webrtc.onMessage = handleMessage;
+            webrtc.onMessage(handleMessage);
             await webrtc.initialize();
             
             // Check for existing signaling
             webrtc.checkSignaling();
             
-            // Update connection status
-            setInterval(() => {
+            // Update connection status periodically
+            const statusInterval = setInterval(() => {
                 const statusEl = document.getElementById('connection-status');
+                if (!webrtc) return;
+                
                 if (webrtc.connectionStatus === 'connected') {
                     statusEl.textContent = '✅ Connected';
                     statusEl.className = 'connection-status connected';
                 } else {
-                    statusEl.textContent = '🔌 Waiting for controller...';
+                    statusEl.textContent = '🔌 Waiting for players...';
                     statusEl.className = 'connection-status disconnected';
                 }
-            }, 1000);
+            }, 500);
         }
         
         // Handle incoming messages
@@ -674,7 +685,18 @@
         // Setup event listeners
         function setupEventListeners() {
             document.getElementById('reset-game').onclick = resetGame;
-            document.getElementById('refresh-qr').onclick = () => generateRoomCode();
+            document.getElementById('refresh-qr').onclick = () => {
+                // Clear existing QR and regenerate without changing room code
+                const qrEl = document.getElementById('qr-code');
+                qrEl.innerHTML = '';
+                
+                const controllerUrl = `${window.location.origin}${window.location.pathname.replace('index.html', 'controller.html')}?room=${roomCode}`;
+                new QRCode(qrEl, {
+                    text: controllerUrl,
+                    width: 150,
+                    height: 150
+                });
+            };
             
             document.querySelectorAll('.mode-btn').forEach(btn => {
                 btn.onclick = () => {
