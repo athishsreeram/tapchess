@@ -2,6 +2,12 @@
 
 A complete chess game using a **phone-as-controller** architecture, where your TV/laptop acts as the display and your phone acts as the input device — connected via WebRTC peer-to-peer.
 
+# Live Url 
+
+[Tap chess](https://athishsreeram.github.io/tapchess/) 
+
+
+
 ## Architecture
 
 **Step 1: Display creates room**
