@@ -12,7 +12,6 @@
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;min-height:100vh;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center}
 
-/* Landing Screen */
 #landing{display:flex;flex-direction:column;align-items:center;gap:30px;text-align:center}
 #landing h1{font-size:3.5rem;text-shadow:0 0 30px rgba(233,69,96,.5)}
 #landing .subtitle{font-size:1.2rem;color:#aaa;margin-top:-15px}
@@ -21,17 +20,16 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
 .mode-btn.ai{background:linear-gradient(135deg,#e94560,#c23152)}
 .mode-btn.pvp{background:linear-gradient(135deg,#0f3460,#1a5276)}
 
-/* Connection Screen */
 #connection{display:none;flex-direction:column;align-items:center;gap:20px;text-align:center}
 #connection h2{font-size:2rem}
 #qrcode-container{background:#fff;padding:20px;border-radius:16px;display:inline-block}
 .room-code{font-size:3rem;font-family:'Courier New',monospace;font-weight:900;letter-spacing:8px;color:#e94560;text-shadow:0 0 20px rgba(233,69,96,.6)}
 .conn-status{font-size:1.2rem;color:#aaa}
 .conn-count{font-size:1.4rem;color:#4ecca3;font-weight:700}
+.controller-url{font-size:.85rem;color:#666;word-break:break-all;max-width:500px;margin-top:5px;padding:8px 12px;background:rgba(0,0,0,.3);border-radius:8px;font-family:'Courier New',monospace}
 .spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,.1);border-top-color:#e94560;border-radius:50%;animation:spin 1s linear infinite;margin:0 auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* Game Screen */
 #game{display:none;width:100%;height:100vh;padding:20px}
 .game-layout{display:flex;width:100%;height:100%;gap:20px;justify-content:center;align-items:center}
 .board-section{display:flex;flex-direction:column;align-items:center;gap:10px}
@@ -51,10 +49,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
 @keyframes kingCheck{0%,100%{box-shadow:inset 0 0 10px red}50%{box-shadow:inset 0 0 25px red}}
 .rank-label{position:absolute;top:2px;left:4px;font-size:.65rem;color:#888;font-weight:700}
 .file-label{position:absolute;bottom:2px;right:4px;font-size:.65rem;color:#888;font-weight:700}
-
 .piece{cursor:default;user-select:none;text-shadow:1px 1px 2px rgba(0,0,0,.3);transition:transform .15s}
 
-/* Right Panel */
 .right-panel{display:flex;flex-direction:column;gap:15px;width:280px;height:100%;max-height:calc(100vh - 40px)}
 .history-panel{flex:1;background:rgba(0,0,0,.4);border-radius:12px;padding:15px;overflow:hidden;display:flex;flex-direction:column}
 .history-panel h3{font-size:1.1rem;margin-bottom:10px;color:#e94560;text-transform:uppercase;letter-spacing:2px}
@@ -72,8 +68,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
 .ctrl-btn:hover{transform:translateY(-2px)}
 .ctrl-btn.new-game{background:#4ecca3}
 .ctrl-btn.resign{background:#e94560}
-.ctrl-btn.settings{background:#0f3460}
-.difficulty-selector{display:flex;gap:6px}
+.diff-selector{display:flex;gap:6px}
 .diff-btn{flex:1;padding:10px;border:2px solid #333;background:transparent;color:#aaa;border-radius:8px;cursor:pointer;font-weight:600;font-size:.85rem;transition:all .2s}
 .diff-btn.active{border-color:#e94560;color:#fff;background:rgba(233,69,96,.2)}
 .diff-label{font-size:.85rem;color:#888;text-align:center}
@@ -83,7 +78,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
 .game-status.win{background:rgba(78,204,163,.2);color:#4ecca3}
 .game-status.draw{background:rgba(255,255,0,.15);color:#ffd700}
 
-/* Responsive */
 @media(max-width:900px){
   .game-layout{flex-direction:column;align-items:center}
   .right-panel{width:100%;max-height:200px;flex-direction:row}
@@ -108,7 +102,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
 
 <div class="disconnected-banner" id="disconnectBanner">⚠️ Player disconnected - waiting for reconnection...</div>
 
-<!-- Landing Screen -->
 <div id="landing">
   <h1>♟ Chess Arena</h1>
   <p class="subtitle">Use your phone as a controller</p>
@@ -116,7 +109,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
   <button class="mode-btn pvp" onclick="selectMode('pvp')">👥 Two Players (2 Phones)</button>
 </div>
 
-<!-- Connection Screen -->
 <div id="connection">
   <h2>📱 Connect Your Phone</h2>
   <div id="qrcode-container"></div>
@@ -124,10 +116,9 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
   <div class="conn-status" id="connStatus">Waiting for controller to connect...</div>
   <div class="conn-count" id="connCount"></div>
   <div class="spinner" id="connSpinner"></div>
-  <p style="color:#666;font-size:.9rem;margin-top:10px">Open <strong>controller.html</strong> on your phone and enter the room code</p>
+  <div class="controller-url" id="controllerUrlDisplay"></div>
 </div>
 
-<!-- Game Screen -->
 <div id="game">
   <div class="game-layout">
     <div class="board-section">
@@ -144,7 +135,7 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
       </div>
       <div class="controls">
         <div class="diff-label" id="diffLabel" style="display:none">AI Difficulty</div>
-        <div class="difficulty-selector" id="diffSelector" style="display:none">
+        <div class="diff-selector" id="diffSelector" style="display:none">
           <button class="diff-btn" data-diff="easy" onclick="setDifficulty('easy')">Easy</button>
           <button class="diff-btn active" data-diff="medium" onclick="setDifficulty('medium')">Medium</button>
           <button class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')">Hard</button>
@@ -156,7 +147,6 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
   </div>
 </div>
 
-<!-- Promotion Overlay -->
 <div class="overlay" id="promoOverlay">
   <div class="overlay-box">
     <h2>Promote Pawn</h2>
@@ -168,7 +158,8 @@ body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135d
 </div>
 
 <script>
-// ===== GLOBALS =====
+const CONTROLLER_BASE_URL = 'https://athishsreeram.github.io/tapchess/controller.html';
+
 let game, peer, connections = [], gameMode = null, difficulty = 'medium';
 let roomCode = '', lastMove = null, moveList = [];
 let pendingPromotion = null;
@@ -179,7 +170,6 @@ const PIECE_MAP = {
 const requiredConns = () => gameMode === 'pvp' ? 2 : 1;
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-// ===== AUDIO =====
 function playBeep(freq, dur) {
   try {
     const o = audioCtx.createOscillator(), g = audioCtx.createGain();
@@ -194,14 +184,12 @@ function soundCapture() { playBeep(400, 80); }
 function soundCheck() { playBeep(500, 60); setTimeout(() => playBeep(500, 60), 120); }
 function soundWin() { playBeep(300,100); setTimeout(()=>playBeep(600,100),150); setTimeout(()=>playBeep(900,200),300); }
 
-// ===== SCREENS =====
 function showScreen(id) {
   ['landing','connection','game'].forEach(s => {
     document.getElementById(s).style.display = s === id ? (s === 'game' ? 'block' : 'flex') : 'none';
   });
 }
 
-// ===== MODE SELECTION =====
 function selectMode(mode) {
   gameMode = mode;
   game = new Chess();
@@ -217,7 +205,6 @@ function selectMode(mode) {
   }
 }
 
-// ===== PEER CONNECTION =====
 function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let c = '';
@@ -231,11 +218,13 @@ function initPeer() {
   document.getElementById('roomCodeDisplay').textContent = '🔴 ' + roomCode;
   document.getElementById('connCount').textContent = `0/${requiredConns()} connected`;
 
-  // QR Code
+  const controllerUrl = CONTROLLER_BASE_URL + '?room=' + roomCode;
+
   const qrContainer = document.getElementById('qrcode-container');
   qrContainer.innerHTML = '';
-  const controllerUrl = window.location.href.replace('index.html','controller.html') + '?room=' + roomCode;
   new QRCode(qrContainer, { text: controllerUrl, width: 220, height: 220, colorDark:'#1a1a2e', colorLight:'#ffffff' });
+
+  document.getElementById('controllerUrlDisplay').textContent = controllerUrl;
 
   peer = new Peer(peerId, { debug: 0 });
   peer.on('open', () => { console.log('Display peer open:', peerId); });
@@ -250,7 +239,6 @@ function handleConnection(conn) {
     document.getElementById('connCount').textContent = `${count}/${requiredConns()} connected`;
     document.getElementById('connStatus').textContent = count >= requiredConns() ? '✅ All players connected!' : 'Waiting for more players...';
 
-    // Assign color
     const color = count === 1 ? 'w' : 'b';
     conn.playerColor = color;
     conn.send(JSON.stringify({ type: 'assign', color: color, mode: gameMode }));
@@ -261,20 +249,12 @@ function handleConnection(conn) {
   });
 
   conn.on('data', (data) => {
-    try {
-      const msg = JSON.parse(data);
-      handleControllerMessage(conn, msg);
-    } catch(e) {}
+    try { handleControllerMessage(conn, JSON.parse(data)); } catch(e) {}
   });
 
   conn.on('close', () => {
     connections = connections.filter(c => c !== conn);
     document.getElementById('disconnectBanner').classList.add('active');
-    setTimeout(() => {
-      if (connections.length < requiredConns()) {
-        document.getElementById('disconnectBanner').classList.add('active');
-      }
-    }, 500);
   });
 }
 
@@ -284,7 +264,6 @@ function handleControllerMessage(conn, msg) {
     const turn = game.turn();
     if (gameMode === 'pvp' && conn.playerColor !== turn) return;
     if (gameMode === 'ai' && turn !== 'w') return;
-
     attemptMove(msg.from, msg.to, msg.promotion);
   }
   if (msg.type === 'get_moves') {
@@ -296,8 +275,8 @@ function handleControllerMessage(conn, msg) {
   }
 }
 
-// ===== GAME LOGIC =====
 function startGame() {
+  document.getElementById('disconnectBanner').classList.remove('active');
   showScreen('game');
   renderBoard();
   updateTurnBanner();
@@ -307,20 +286,15 @@ function startGame() {
 
 function attemptMove(from, to, promotion) {
   const moveObj = { from, to, promotion: promotion || undefined };
-  const result = game.move(moveObj);
+  let result = game.move(moveObj);
   if (!result) {
-    // Try with promotion
-    const promoResult = game.move({ from, to, promotion: 'q' });
-    if (!promoResult) return;
-    moveList.push(promoResult);
-  } else {
-    moveList.push(result);
+    result = game.move({ from, to, promotion: 'q' });
+    if (!result) return;
   }
-  const m = moveList[moveList.length - 1];
-  lastMove = { from: m.from, to: m.to };
+  moveList.push(result);
+  lastMove = { from: result.from, to: result.to };
 
-  // Audio
-  if (m.captured) soundCapture();
+  if (result.captured) soundCapture();
   else soundMove();
   if (game.in_check()) soundCheck();
 
@@ -330,7 +304,6 @@ function attemptMove(from, to, promotion) {
   sendStateToAll();
   checkGameEnd();
 
-  // AI move
   if (gameMode === 'ai' && !game.game_over() && game.turn() === 'b') {
     setTimeout(makeAIMove, 500);
   }
@@ -354,8 +327,7 @@ function makeAIMove() {
   if (result) {
     moveList.push(result);
     lastMove = { from: result.from, to: result.to };
-    if (result.captured) soundCapture();
-    else soundMove();
+    if (result.captured) soundCapture(); else soundMove();
     if (game.in_check()) soundCheck();
     renderBoard();
     updateTurnBanner();
@@ -366,12 +338,9 @@ function makeAIMove() {
 }
 
 function pickMediumMove(moves) {
-  // Prefer captures and checks, otherwise random
   const captures = moves.filter(m => m.captured);
   const checks = moves.filter(m => {
-    const g2 = new Chess(game.fen());
-    g2.move(m);
-    return g2.in_check();
+    const g2 = new Chess(game.fen()); g2.move(m); return g2.in_check();
   });
   if (checks.length > 0 && Math.random() > 0.3) return checks[Math.floor(Math.random()*checks.length)];
   if (captures.length > 0 && Math.random() > 0.3) return captures[Math.floor(Math.random()*captures.length)];
@@ -381,25 +350,18 @@ function pickMediumMove(moves) {
 function pickHardMove(moves) {
   const pieceValues = { p:1, n:3, b:3, r:5, q:9, k:0 };
   let best = -Infinity, bestMoves = [];
-
   for (const m of moves) {
     let score = 0;
-    const g2 = new Chess(game.fen());
-    g2.move(m);
+    const g2 = new Chess(game.fen()); g2.move(m);
     if (g2.in_checkmate()) return m;
     if (g2.in_check()) score += 3;
     if (m.captured) score += pieceValues[m.captured] * 2;
-    // Center control
     const col = m.to.charCodeAt(0) - 97, row = parseInt(m.to[1]);
     score += (3.5 - Math.abs(col - 3.5)) * 0.3 + (3.5 - Math.abs(row - 4.5)) * 0.3;
-    // Penalize moving to attacked squares
     const oppMoves = g2.moves({ verbose: true });
     if (oppMoves.some(om => om.to === m.to && om.captured)) score -= pieceValues[m.piece] * 0.5;
-    // Develop pieces early
     if (moveList.length < 10 && (m.piece === 'n' || m.piece === 'b')) score += 1;
-
-    score += (Math.random() - 0.5) * 0.5; // tiny randomness
-
+    score += (Math.random() - 0.5) * 0.5;
     if (score > best) { best = score; bestMoves = [m]; }
     else if (score === best) bestMoves.push(m);
   }
@@ -428,30 +390,23 @@ function checkGameEnd() {
   }
 }
 
-// ===== RENDERING =====
 function renderBoard() {
   const board = document.getElementById('board');
   const boardSize = Math.min(window.innerWidth - 340, window.innerHeight - 140, 600);
   board.style.width = boardSize + 'px';
   board.style.height = boardSize + 'px';
   board.innerHTML = '';
-
   const position = game.board();
   for (let r = 0; r < 8; r++) {
     for (let c = 0; c < 8; c++) {
       const sq = document.createElement('div');
       const isLight = (r + c) % 2 === 0;
       sq.className = 'square ' + (isLight ? 'light' : 'dark');
-
-      const file = String.fromCharCode(97 + c);
-      const rank = 8 - r;
-      const sqName = file + rank;
-
+      const file = String.fromCharCode(97 + c), rank = 8 - r, sqName = file + rank;
       if (lastMove) {
         if (sqName === lastMove.from) sq.classList.add('last-from');
         if (sqName === lastMove.to) sq.classList.add('last-to');
       }
-
       const piece = position[r][c];
       if (piece) {
         const key = piece.color === 'w' ? piece.type.toUpperCase() : piece.type.toLowerCase();
@@ -459,27 +414,10 @@ function renderBoard() {
         span.className = 'piece';
         span.textContent = PIECE_MAP[key];
         sq.appendChild(span);
-
-        // Check highlight
-        if (piece.type === 'k' && game.in_check() && piece.color === game.turn()) {
-          sq.classList.add('check-king');
-        }
+        if (piece.type === 'k' && game.in_check() && piece.color === game.turn()) sq.classList.add('check-king');
       }
-
-      // Labels
-      if (c === 0) {
-        const lbl = document.createElement('span');
-        lbl.className = 'rank-label';
-        lbl.textContent = rank;
-        sq.appendChild(lbl);
-      }
-      if (r === 7) {
-        const lbl = document.createElement('span');
-        lbl.className = 'file-label';
-        lbl.textContent = file;
-        sq.appendChild(lbl);
-      }
-
+      if (c === 0) { const l = document.createElement('span'); l.className = 'rank-label'; l.textContent = rank; sq.appendChild(l); }
+      if (r === 7) { const l = document.createElement('span'); l.className = 'file-label'; l.textContent = file; sq.appendChild(l); }
       board.appendChild(sq);
     }
   }
@@ -488,18 +426,9 @@ function renderBoard() {
 function updateTurnBanner() {
   const banner = document.getElementById('turnBanner');
   const turn = game.turn();
-  if (game.game_over()) {
-    banner.textContent = '🏁 Game Over';
-    banner.className = 'turn-banner white';
-    return;
-  }
-  if (turn === 'w') {
-    banner.textContent = '⬜ White\'s Turn';
-    banner.className = 'turn-banner white' + (game.in_check() ? ' check' : '');
-  } else {
-    banner.textContent = '⬛ Black\'s Turn';
-    banner.className = 'turn-banner black' + (game.in_check() ? ' check' : '');
-  }
+  if (game.game_over()) { banner.textContent = '🏁 Game Over'; banner.className = 'turn-banner white'; return; }
+  if (turn === 'w') { banner.textContent = "⬜ White's Turn"; banner.className = 'turn-banner white' + (game.in_check() ? ' check' : ''); }
+  else { banner.textContent = "⬛ Black's Turn"; banner.className = 'turn-banner black' + (game.in_check() ? ' check' : ''); }
 }
 
 function renderHistory() {
@@ -507,35 +436,20 @@ function renderHistory() {
   list.innerHTML = '';
   const history = game.history();
   for (let i = 0; i < history.length; i += 2) {
-    const row = document.createElement('div');
-    row.className = 'move-row';
-    const num = document.createElement('span');
-    num.className = 'move-num';
-    num.textContent = (Math.floor(i/2) + 1) + '.';
-    const w = document.createElement('span');
-    w.className = 'move-white';
-    w.textContent = history[i] || '';
-    const b = document.createElement('span');
-    b.className = 'move-black';
-    b.textContent = history[i+1] || '';
-    row.appendChild(num);
-    row.appendChild(w);
-    row.appendChild(b);
+    const row = document.createElement('div'); row.className = 'move-row';
+    const num = document.createElement('span'); num.className = 'move-num'; num.textContent = (Math.floor(i/2)+1) + '.';
+    const w = document.createElement('span'); w.className = 'move-white'; w.textContent = history[i] || '';
+    const b = document.createElement('span'); b.className = 'move-black'; b.textContent = history[i+1] || '';
+    row.appendChild(num); row.appendChild(w); row.appendChild(b);
     list.appendChild(row);
   }
   list.scrollTop = list.scrollHeight;
 }
 
-// ===== COMMUNICATION =====
 function sendStateToAll() {
   const state = {
-    type: 'state',
-    fen: game.fen(),
-    turn: game.turn(),
-    history: game.history(),
-    lastMove: lastMove,
-    gameOver: game.game_over(),
-    inCheck: game.in_check(),
+    type: 'state', fen: game.fen(), turn: game.turn(), history: game.history(),
+    lastMove: lastMove, gameOver: game.game_over(), inCheck: game.in_check(),
     result: game.in_checkmate() ? 'checkmate' : game.in_stalemate() ? 'stalemate' : game.in_draw() ? 'draw' : null
   };
   broadcastAll(state);
@@ -546,21 +460,15 @@ function broadcastAll(msg) {
   connections.forEach(c => { try { c.send(data); } catch(e) {} });
 }
 
-// ===== CONTROLS =====
 function setDifficulty(d) {
   difficulty = d;
   document.querySelectorAll('.diff-btn').forEach(b => b.classList.toggle('active', b.dataset.diff === d));
 }
 
 function newGame() {
-  game = new Chess();
-  moveList = [];
-  lastMove = null;
+  game = new Chess(); moveList = []; lastMove = null;
   document.getElementById('gameStatus').className = 'game-status';
-  renderBoard();
-  updateTurnBanner();
-  renderHistory();
-  sendStateToAll();
+  renderBoard(); updateTurnBanner(); renderHistory(); sendStateToAll();
 }
 
 function resignGame() {
@@ -574,13 +482,9 @@ function resignGame() {
 
 function doPromotion(piece) {
   document.getElementById('promoOverlay').classList.remove('active');
-  if (pendingPromotion) {
-    attemptMove(pendingPromotion.from, pendingPromotion.to, piece);
-    pendingPromotion = null;
-  }
+  if (pendingPromotion) { attemptMove(pendingPromotion.from, pendingPromotion.to, piece); pendingPromotion = null; }
 }
 
-// ===== RESIZE =====
 window.addEventListener('resize', () => { if (document.getElementById('game').style.display !== 'none') renderBoard(); });
 </script>
 </body>

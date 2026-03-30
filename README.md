@@ -5,6 +5,8 @@ A complete chess game using a **phone-as-controller** architecture, where your T
 # Live Url 
 
 [Tap chess](https://athishsreeram.github.io/tapchess/) 
+[Tap chess Controller](https://athishsreeram.github.io/tapchess/controller.html) 
+
 
 
 
